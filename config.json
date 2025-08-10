@@ -1,0 +1,23 @@
+{
+  "name": "Maxtune's Photo Gallery",
+  "title": "Maxtune Photography",
+  "description": "人生路漫漫，白鹭常相伴",
+  "url": "https://gallery.mxte.cc",
+  "accentColor": "rgb(255, 107, 1)",
+  "ogImage": {
+    "width": 1200,
+    "height": 630
+  },
+  "author": {
+    "name": "Maxtune Photography",
+    "url": "https://mxte.cc/",
+    "avatar": "https://assets-gallery.mxte.cc/avatar.jpg"
+  },
+  "social": {
+    "twitter": "@MaxtuneLee",
+    "github": "MaxtuneLee"
+  },
+  "extra": {
+    "accessRepo": true
+  }
+}

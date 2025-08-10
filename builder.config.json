@@ -1,0 +1,13 @@
+{
+  "repo": {
+    "enable": false
+  },
+  "storage": {
+    "provider": "s3",
+    "bucket": "maxtune-gallery",
+    "region": "oss-cn-guangzhou",
+    "prefix": "photos/",
+    "customDomain": "https://assets-gallery.mxte.cc",
+    "endpoint": "https://oss-cn-guangzhou.aliyuncs.com"
+  }
+}

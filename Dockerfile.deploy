@@ -1,0 +1,37 @@
+# Dockerfile for deployment (build artifacts are copied from host)
+# This Dockerfile is optimized for GitHub Actions deployment
+# Build artifacts should be prepared before running docker build
+
+FROM node:20-alpine AS base
+WORKDIR /app
+RUN corepack enable
+
+# -----------------
+# Runner stage
+# -----------------
+FROM base AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+RUN apk add --no-cache curl wget
+
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+USER nextjs
+
+# Copy pre-built artifacts from the host
+COPY --chown=nextjs:nodejs ./apps/ssr/.next/standalone ./
+COPY --chown=nextjs:nodejs ./apps/ssr/.next/static /app/apps/ssr/.next/static
+COPY --chown=nextjs:nodejs ./apps/ssr/public /app/apps/ssr/public
+
+# Copy environment variables file
+COPY --chown=nextjs:nodejs .env /app/.env
+
+# The standalone output includes the server.js file.
+# The PORT environment variable is automatically used by Next.js.
+EXPOSE 3000
+
+CMD ["node", "apps/ssr/server.js"]
