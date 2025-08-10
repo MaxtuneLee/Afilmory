@@ -44,7 +44,7 @@ export async function extractExifData(
       `${crypto.randomUUID()}.jpg`,
     )
 
-    await writeFile(tempImagePath, imageBuffer)
+    await writeFile(tempImagePath, originalBuffer || imageBuffer)
     const exifData = await exiftool.read(tempImagePath)
     const result = handleExifData(exifData, metadata)
 
@@ -119,6 +119,7 @@ const pickKeys: Array<keyof Tags | (string & {})> = [
   'ScaleFactor35efl',
   'ShutterSpeed',
   'LightValue',
+  'Rating',
   // GPS
   'GPSAltitude',
   'GPSCoordinates',

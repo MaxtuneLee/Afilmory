@@ -6,11 +6,14 @@ import { PhotoViewer } from '~/components/ui/photo-viewer'
 import { RootPortal } from '~/components/ui/portal'
 import { RootPortalProvider } from '~/components/ui/portal/provider'
 import { useTitle } from '~/hooks/common'
-import { usePhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
+import {
+  useContextPhotos,
+  usePhotoViewer,
+} from '~/hooks/usePhotoViewer'
 
 export const Component = () => {
   const photoViewer = usePhotoViewer()
-  const photos = usePhotos()
+  const photos = useContextPhotos()
 
   const ref = useRef<HTMLDivElement>(null)
   const rootPortalValue = useMemo(() => {

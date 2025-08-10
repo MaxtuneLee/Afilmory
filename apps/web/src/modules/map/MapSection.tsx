@@ -156,7 +156,7 @@ const MapSectionContent = () => {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="absolute h-full w-full">
       {/* Back button */}
       <MapBackButton />
 

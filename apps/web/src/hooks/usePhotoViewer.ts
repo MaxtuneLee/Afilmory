@@ -1,10 +1,11 @@
 import { photoLoader } from '@afilmory/data'
 import { atom, useAtom, useAtomValue } from 'jotai'
-import { useCallback, useMemo } from 'react'
+import { use, useCallback, useMemo } from 'react'
 
 import { gallerySettingAtom } from '~/atoms/app'
 import { jotaiStore } from '~/lib/jotai'
 import { trackView } from '~/lib/tracker'
+import { PhotosContext } from '~/providers/photos-provider'
 
 const openAtom = atom(false)
 const currentIndexAtom = atom(0)
@@ -14,14 +15,38 @@ const data = photoLoader.getPhotos()
 // 抽取照片筛选和排序逻辑为独立函数
 const filterAndSortPhotos = (
   selectedTags: string[],
+  selectedCameras: string[],
+  selectedLenses: string[],
   sortOrder: 'asc' | 'desc',
 ) => {
-  // 首先根据 tags 筛选
+  // 根据 tags、cameras 和 lenses 筛选
   let filteredPhotos = data
+
+  // Tags 筛选：照片必须包含至少一个选中的标签
   if (selectedTags.length > 0) {
-    filteredPhotos = data.filter((photo) =>
+    filteredPhotos = filteredPhotos.filter((photo) =>
       selectedTags.some((tag) => photo.tags.includes(tag)),
     )
+  }
+
+  // Cameras 筛选：照片的相机必须匹配选中的相机之一
+  if (selectedCameras.length > 0) {
+    filteredPhotos = filteredPhotos.filter((photo) => {
+      if (!photo.exif?.Make || !photo.exif?.Model) return false
+      const cameraDisplayName = `${photo.exif.Make.trim()} ${photo.exif.Model.trim()}`
+      return selectedCameras.includes(cameraDisplayName)
+    })
+  }
+
+  // Lenses 筛选：照片的镜头必须匹配选中的镜头之一
+  if (selectedLenses.length > 0) {
+    filteredPhotos = filteredPhotos.filter((photo) => {
+      if (!photo.exif?.LensModel) return false
+      const lensModel = photo.exif.LensModel.trim()
+      const lensMake = photo.exif.LensMake?.trim()
+      const lensDisplayName = lensMake ? `${lensMake} ${lensModel}` : lensModel
+      return selectedLenses.includes(lensDisplayName)
+    })
   }
 
   // 然后排序
@@ -55,18 +80,34 @@ export const getFilteredPhotos = () => {
   const currentGallerySetting = jotaiStore.get(gallerySettingAtom)
   return filterAndSortPhotos(
     currentGallerySetting.selectedTags,
+    currentGallerySetting.selectedCameras,
+    currentGallerySetting.selectedLenses,
     currentGallerySetting.sortOrder,
   )
 }
 
 export const usePhotos = () => {
-  const { sortOrder, selectedTags } = useAtomValue(gallerySettingAtom)
+  const { sortOrder, selectedTags, selectedCameras, selectedLenses } =
+    useAtomValue(gallerySettingAtom)
 
   const masonryItems = useMemo(() => {
-    return filterAndSortPhotos(selectedTags, sortOrder)
-  }, [sortOrder, selectedTags])
+    return filterAndSortPhotos(
+      selectedTags,
+      selectedCameras,
+      selectedLenses,
+      sortOrder,
+    )
+  }, [sortOrder, selectedTags, selectedCameras, selectedLenses])
 
   return masonryItems
+}
+
+export const useContextPhotos = () => {
+  const photos = use(PhotosContext)
+  if (!photos) {
+    throw new Error('PhotosContext is not initialized')
+  }
+  return photos
 }
 
 export const usePhotoViewer = () => {
@@ -76,7 +117,7 @@ export const usePhotoViewer = () => {
   const [triggerElement, setTriggerElement] = useAtom(triggerElementAtom)
 
   const id = useMemo(() => {
-    return photos[currentIndex].id
+    return photos[currentIndex]?.id
   }, [photos, currentIndex])
   const openViewer = useCallback(
     (index: number, element?: HTMLElement) => {

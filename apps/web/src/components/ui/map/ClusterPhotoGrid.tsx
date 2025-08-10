@@ -154,6 +154,7 @@ export const ClusterPhotoGrid = ({
                       })} - ${latest?.toLocaleDateString(i18n.language, {
                         month: 'short',
                         day: 'numeric',
+                        year: 'numeric',
                       })}`}
                 </span>
               </div>

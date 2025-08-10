@@ -6,7 +6,9 @@ import { gallerySettingAtom } from '~/atoms/app'
 import { DateRangeIndicator } from '~/components/ui/date-range-indicator'
 import { useScrollViewElement } from '~/components/ui/scroll-areas/hooks'
 import { useMobile } from '~/hooks/useMobile'
-import { usePhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
+import {
+  useContextPhotos,
+} from '~/hooks/usePhotoViewer'
 import { useTypeScriptHappyCallback } from '~/hooks/useTypeScriptCallback'
 import { useVisiblePhotosDateRange } from '~/hooks/useVisiblePhotosDateRange'
 import { clsxm } from '~/lib/cn'
@@ -51,15 +53,12 @@ export const MasonryRoot = () => {
   const [showFloatingActions, setShowFloatingActions] = useState(false)
   const [containerWidth, setContainerWidth] = useState(0)
 
-  const photos = usePhotos()
+  const photos = useContextPhotos()
   const masonryRef = useRef<MasonryRef>(null)
-  // useEffect(() => {
-  //   nextFrame(() => masonryRef.current?.reposition())
-  // }, [photos])
+
   const { dateRange, handleRender } = useVisiblePhotosDateRange(photos)
   const scrollElement = useScrollViewElement()
 
-  const photoViewer = usePhotoViewer()
   const handleAnimationComplete = useCallback(() => {
     hasAnimatedRef.current = true
   }, [])
@@ -177,13 +176,11 @@ export const MasonryRoot = () => {
             (props) => (
               <MasonryItem
                 {...props}
-                onPhotoClick={photoViewer.openViewer}
-                photos={photos}
                 hasAnimated={hasAnimatedRef.current}
                 onAnimationComplete={handleAnimationComplete}
               />
             ),
-            [handleAnimationComplete, photoViewer.openViewer, photos],
+            [handleAnimationComplete],
           )}
           onRender={handleRender}
           columnWidth={columnWidth}
@@ -217,16 +214,13 @@ export const MasonryItem = memo(
     data,
     width,
     index,
-    onPhotoClick,
-    photos,
+
     hasAnimated,
     onAnimationComplete,
   }: {
     data: MasonryItemType
     width: number
     index: number
-    onPhotoClick: (index: number, element?: HTMLElement) => void
-    photos: PhotoManifest[]
     hasAnimated: boolean
     onAnimationComplete: () => void
   }) => {
@@ -269,7 +263,7 @@ export const MasonryItem = memo(
     }
 
     if (data instanceof MasonryHeaderItem) {
-      return <MasonryHeaderMasonryItem style={{ width }} />
+      return <MasonryHeaderMasonryItem style={{ width }} key={itemKey} />
     } else {
       return (
         <m.div
@@ -283,8 +277,6 @@ export const MasonryItem = memo(
             data={data as PhotoManifest}
             width={width}
             index={index}
-            onPhotoClick={onPhotoClick}
-            photos={photos}
           />
         </m.div>
       )

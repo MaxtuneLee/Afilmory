@@ -1,4 +1,3 @@
-import path from 'node:path'
 
 import type { _Object } from '@aws-sdk/client-s3'
 
@@ -33,7 +32,6 @@ export async function processPhoto(
     return { item: null, type: 'failed' }
   }
 
-  const photoId = path.basename(key, path.extname(key))
   const existingItem = existingManifestMap.get(key)
 
   // 创建并设置全局 logger
@@ -45,7 +43,6 @@ export async function processPhoto(
   // 构建处理上下文
   const context: PhotoProcessingContext = {
     photoKey: key,
-    photoId,
     obj,
     existingItem,
     livePhotoMap,

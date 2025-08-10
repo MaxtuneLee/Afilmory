@@ -19,7 +19,7 @@ const actions: {
     icon: 'i-mingcute-sort-descending-line',
     title: 'action.sort.mode',
   },
-  { id: 'tags', icon: 'i-mingcute-tag-line', title: 'action.tag.filter' },
+  { id: 'tags', icon: 'i-mingcute-filter-line', title: 'action.filter.title' },
   {
     id: 'columns',
     icon: 'i-mingcute-grid-line',

@@ -1,3 +1,6 @@
+import crypto from 'node:crypto'
+import path from 'node:path'
+
 import type { _Object } from '@aws-sdk/client-s3'
 import sharp from 'sharp'
 
@@ -29,7 +32,6 @@ export interface ProcessedImageData {
 
 export interface PhotoProcessingContext {
   photoKey: string
-  photoId: string
   obj: _Object
   existingItem: PhotoManifestItem | undefined
   livePhotoMap: Map<string, _Object>
@@ -127,15 +129,35 @@ export async function processImageWithSharp(
 }
 
 /**
+ * 生成带摘要后缀的ID
+ * @param s3Key S3键
+ * @returns 带摘要后缀的ID
+ */
+function generatePhotoId(s3Key: string): string {
+  const { options } = defaultBuilder.getConfig()
+  const { digestSuffixLength } = options
+  if (!digestSuffixLength || digestSuffixLength <= 0) {
+    return path.basename(s3Key, path.extname(s3Key))
+  }
+
+  const baseName = path.basename(s3Key, path.extname(s3Key))
+  const sha256 = crypto.createHash('sha256').update(s3Key).digest('hex')
+  const digestSuffix = sha256.slice(0, digestSuffixLength)
+  return `${baseName}_${digestSuffix}`
+}
+
+/**
  * 完整的照片处理管道
  * 整合所有处理步骤
  */
 export async function executePhotoProcessingPipeline(
   context: PhotoProcessingContext,
 ): Promise<PhotoManifestItem | null> {
-  const { photoKey, photoId, obj, existingItem, livePhotoMap, options } =
-    context
+  const { photoKey, obj, existingItem, livePhotoMap, options } = context
   const loggers = getGlobalLoggers()
+
+  // Generate the actual photo ID with digest suffix
+  const photoId = generatePhotoId(photoKey)
 
   try {
     // 1. 预处理图片

@@ -113,6 +113,7 @@ This will automatically pull resources from the remote repository, avoiding rebu
 #### Build Options (`options`)
 
 - `defaultConcurrency`: Default concurrency
+- `digestSuffixLength`: The length of the SHA-256 digest appended to the photo ID.
 - `enableLivePhotoDetection`: Enable Live Photo detection
 - `showProgress`: Show build progress
 - `showDetailedStats`: Show detailed statistics
