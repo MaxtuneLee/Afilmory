@@ -9,6 +9,7 @@ import Route5 from '../contents/deployment/github-pages.mdx'
 import Route1 from '../contents/deployment/index.mdx'
 import Route6 from '../contents/deployment/vercel.mdx'
 import Route0 from '../contents/index.mdx'
+import Route7 from '../contents/storage/index.mdx'
 
 export interface RouteConfig {
   path: string
@@ -23,78 +24,88 @@ export const routes: RouteConfig[] = [
     component: Route0,
     title: 'Overview',
     meta: {
-      title: 'Overview',
-      createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-07-20T22:35:03+08:00',
-    },
+        "title": "Overview",
+        "createdAt": "2025-07-20T22:35:03+08:00",
+        "lastModified": "2025-07-20T22:35:03+08:00"
+    }
   },
   {
     path: '/deployment',
     component: Route1,
     title: 'Deployment',
     meta: {
-      title: 'Deployment',
-      description:
-        'Guide to deploying Afilmory in production environments, including Docker and configuration options.',
-      createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-08-08T08:28:42.778+08:00',
-    },
+        "title": "Deployment",
+        "description": "Guide to deploying Afilmory in production environments, including Docker and configuration options.",
+        "createdAt": "2025-07-20T22:35:03+08:00",
+        "lastModified": "2025-08-08T08:28:42.778+08:00"
+    }
   },
   {
     path: '/deployment/cloudflare-pages',
     component: Route2,
     title: 'Cloudflare Pages',
     meta: {
-      title: 'Cloudflare Pages',
-      description: 'Guide to deploying Afilmory via Cloudflare Pages.',
-      createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-08-08T17:39:40+08:00',
-    },
+        "title": "Cloudflare Pages",
+        "description": "Guide to deploying Afilmory via Cloudflare Pages.",
+        "createdAt": "2025-07-20T22:35:03+08:00",
+        "lastModified": "2025-08-08T17:39:40+08:00"
+    }
   },
   {
     path: '/deployment/docker',
     component: Route3,
     title: 'Docker',
     meta: {
-      title: 'Docker',
-      description: 'Guide to deploying Afilmory via Docker.',
-      createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-08-08T17:39:40+08:00',
-    },
+        "title": "Docker",
+        "description": "Guide to deploying Afilmory via Docker.",
+        "createdAt": "2025-07-20T22:35:03+08:00",
+        "lastModified": "2025-08-08T17:39:40+08:00"
+    }
   },
   {
     path: '/deployment/github-action',
     component: Route4,
     title: 'Github Action',
     meta: {
-      title: 'Github Action',
-      description: 'Guide to deploying Afilmory via Github Action.',
-      createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-08-08T17:39:40+08:00',
-    },
+        "title": "Github Action",
+        "description": "Guide to deploying Afilmory via Github Action.",
+        "createdAt": "2025-07-20T22:35:03+08:00",
+        "lastModified": "2025-08-08T17:39:40+08:00"
+    }
   },
   {
     path: '/deployment/github-pages',
     component: Route5,
     title: 'Github Pages',
     meta: {
-      title: 'Github Pages',
-      description: 'Guide to deploying Afilmory via Github Pages.',
-      createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-08-08T17:39:40+08:00',
-    },
+        "title": "Github Pages",
+        "description": "Guide to deploying Afilmory via Github Pages.",
+        "createdAt": "2025-07-20T22:35:03+08:00",
+        "lastModified": "2025-08-08T17:39:40+08:00"
+    }
   },
   {
     path: '/deployment/vercel',
     component: Route6,
     title: 'Vercel',
     meta: {
-      title: 'Vercel',
-      description: 'Guide to deploying Afilmory via Vercel.',
-      createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-08-08T17:39:40+08:00',
-    },
+        "title": "Vercel",
+        "description": "Guide to deploying Afilmory via Vercel.",
+        "createdAt": "2025-07-20T22:35:03+08:00",
+        "lastModified": "2025-08-08T17:39:40+08:00"
+    }
   },
+  {
+    path: '/storage',
+    component: Route7,
+    title: 'Storage providers',
+    meta: {
+        "title": "Storage providers",
+        "description": "Afilmory can work with multiple storage providers, including S3, Git and local file system",
+        "createdAt": "2025-08-12T15:09:08+08:00",
+        "lastModified": "2025-08-12T15:14:50+08:00"
+    }
+  }
 ]
 
 export default routes

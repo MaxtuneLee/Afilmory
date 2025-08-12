@@ -12,6 +12,7 @@
     "build": "pnpm --filter @afilmory/ssr build",
     "build:manifest": "pnpm --filter @afilmory/builder cli",
     "build:update-remote-repo": "sh scripts/build-update-remote-repo.sh",
+    "create:doc": "tsx scripts/create-doc.ts",
     "dev": "pnpm --filter @afilmory/ssr dev",
     "docs:build": "pnpm --filter @afilmory/docs build",
     "docs:dev": "pnpm --filter @afilmory/docs dev",
@@ -31,6 +32,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@clack/prompts": "^0.11.0",
     "@innei/prettier": "0.15.0",
     "consola": "3.4.2",
     "dotenv-expand": "catalog:",

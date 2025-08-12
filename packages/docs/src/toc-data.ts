@@ -263,6 +263,44 @@ export const tocData: FileToc[] = [
         "children": []
       }
     ]
+  },
+  {
+    "file": "storage/index.mdx",
+    "path": "/storage",
+    "title": "Storage providers",
+    "toc": [
+      {
+        "id": "heading-storage-providers",
+        "level": 1,
+        "text": "Storage providers",
+        "children": [
+          {
+            "id": "heading-introduction",
+            "level": 2,
+            "text": "Introduction",
+            "children": []
+          },
+          {
+            "id": "heading-content",
+            "level": 2,
+            "text": "Content",
+            "children": []
+          },
+          {
+            "id": "heading-examples",
+            "level": 2,
+            "text": "Examples",
+            "children": []
+          },
+          {
+            "id": "heading-conclusion",
+            "level": 2,
+            "text": "Conclusion",
+            "children": []
+          }
+        ]
+      }
+    ]
   }
 ]
 

@@ -217,19 +217,10 @@ The built site in `dist/` can be deployed to any static hosting service:
 
 When contributing to the documentation:
 
-1. Follow the established file naming conventions
-2. Include proper frontmatter metadata
+1. Use `pnpm create:doc` and follow instructions to create a new document.
+2. Write your docs.
 3. Test your changes locally with `pnpm dev`
 4. Ensure the build passes with `pnpm build`
 5. Use semantic commit messages
-
-## Technical Details
-
-- **React 19** with latest features
-- **Vite 7** for fast builds and HMR
-- **TypeScript** for type safety
-- **Tailwind CSS 4** for styling
-- **Shiki** for syntax highlighting
-- **Custom plugins** for route generation
 
 For more information about the Afilmory project architecture, see the main project documentation.
