@@ -60,7 +60,7 @@ export const routes: RouteConfig[] = [
       title: 'Docker',
       description: 'Guide to deploying Afilmory via Docker.',
       createdAt: '2025-07-20T22:35:03+08:00',
-      lastModified: '2025-08-08T17:39:40+08:00',
+      lastModified: '2025-08-31T11:08:35+08:00',
     },
   },
   {
@@ -105,7 +105,7 @@ export const routes: RouteConfig[] = [
       description:
         'Afilmory can work with multiple storage providers, including S3, Git and local file system',
       createdAt: '2025-08-12T15:09:08+08:00',
-      lastModified: '2025-08-12T15:14:50+08:00',
+      lastModified: '2025-08-31T11:08:35+08:00',
     },
   },
 ]

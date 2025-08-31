@@ -204,7 +204,7 @@ function App({ url }: { url?: string }) {
           </div>
 
           {/* 桌面端目录 */}
-          <div className="hidden w-64 px-4 py-6 lg:py-12 xl:block">
+          <div className="hidden w-64 px-4 pt-6 lg:pt-12 xl:block">
             <h4 className="mb-3 flex items-center gap-2 text-sm font-normal text-gray-600">
               <AlignLeftIcon className="mr-1 inline-block h-4 w-4" />
               On this page
