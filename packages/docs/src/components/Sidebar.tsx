@@ -123,7 +123,7 @@ function NavigationItemComponent({
           ${
             isActive
               ? 'text-blue bg-blue/15 font-medium'
-              : 'hover:bg-background-tertiary text-gray-600 dark:text-gray-400'
+              : 'hover:bg-background-tertiary/50 text-gray-600 dark:text-gray-400'
           }
           ${level > 0 ? 'pl-3' : ''}
         `}
