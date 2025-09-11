@@ -282,8 +282,7 @@ export const SharePanel = ({ photo, trigger, blobSrc }: SharePanelProps) => {
                         <code className="text-text-secondary font-mono text-xs break-all whitespace-pre select-all">
                           {`<iframe
   src="${siteConfig.url.replace(/\/$/, '')}/share/iframe?id=${photo.id}"
-  height="500"
-  style="width: 100%;"
+  style="width: 100%; aspect-ratio: ${photo.width} / ${photo.height}"
   allowTransparency
   sandbox="allow-scripts allow-same-origin allow-popups"
 />`}

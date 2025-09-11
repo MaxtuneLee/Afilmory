@@ -1,11 +1,11 @@
-import { photoLoader } from '@afilmory/data'
-import { useAtom } from 'jotai'
+import { useAtom, useSetAtom } from 'jotai'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Drawer } from 'vaul'
 
 import { gallerySettingAtom } from '~/atoms/app'
+import { FilterPanel } from '~/components/gallery/FilterPanel'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
@@ -15,8 +15,6 @@ import {
 import { Slider } from '~/components/ui/slider'
 import { useMobile } from '~/hooks/useMobile'
 import { clsxm } from '~/lib/cn'
-
-const allTags = photoLoader.getAllTags()
 
 const SortPanel = () => {
   const { t } = useTranslation()
@@ -58,70 +56,6 @@ const SortPanel = () => {
           <i className="i-mingcute-check-line ml-auto" />
         )}
       </div>
-    </div>
-  )
-}
-
-const TagsPanel = () => {
-  const { t } = useTranslation()
-  const [gallerySetting, setGallerySetting] = useAtom(gallerySettingAtom)
-
-  const toggleTag = (tag: string) => {
-    const newSelectedTags = gallerySetting.selectedTags.includes(tag)
-      ? gallerySetting.selectedTags.filter((t) => t !== tag)
-      : [...gallerySetting.selectedTags, tag]
-
-    setGallerySetting({
-      ...gallerySetting,
-      selectedTags: newSelectedTags,
-    })
-  }
-
-  const clearAllTags = () => {
-    setGallerySetting({
-      ...gallerySetting,
-      selectedTags: [],
-    })
-  }
-
-  return (
-    <div className="lg:pb-safe-2 w-full p-2 pb-0 text-sm lg:w-64 lg:p-0">
-      <div className="relative mb-2">
-        <h3 className="flex h-6 items-center px-2 font-medium lg:h-8">
-          {t('action.tag.filter')}
-        </h3>
-        {gallerySetting.selectedTags.length > 0 && (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={clearAllTags}
-            className="absolute top-0 right-0 h-8 rounded-md px-2 text-xs"
-          >
-            {t('action.tag.clear')}
-          </Button>
-        )}
-      </div>
-
-      {allTags.length === 0 ? (
-        <div className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          {t('action.tag.empty')}
-        </div>
-      ) : (
-        <div className="pb-safe-offset-4 lg:pb-safe -mx-4 -mb-4 max-h-64 overflow-y-auto px-4 lg:mx-0 lg:mb-0 lg:px-0">
-          {allTags.map((tag) => (
-            <div
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className="hover:bg-accent/50 flex cursor-pointer items-center rounded-md bg-transparent px-2 py-3 lg:py-1"
-            >
-              <span className="flex-1">{tag}</span>
-              {gallerySetting.selectedTags.includes(tag) && (
-                <i className="i-mingcute-check-line ml-auto" />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -205,15 +139,28 @@ const DesktopActionButton = ({
   badge,
   children,
   contentClassName,
+  open,
+  onOpenChange,
 }: {
   icon: string
   title: string
   badge?: number | string
   children: React.ReactNode
   contentClassName?: string
+  open?: boolean
+  onOpenChange?: (
+    open: boolean,
+    setGallerySetting: (setting: any) => void,
+  ) => void
 }) => {
+  const setGallerySetting = useSetAtom(gallerySettingAtom)
   return (
-    <DropdownMenu>
+    <DropdownMenu
+      defaultOpen={open}
+      onOpenChange={(open) => {
+        onOpenChange?.(open, setGallerySetting)
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <ActionButton
           icon={icon}
@@ -273,12 +220,19 @@ const ResponsiveActionButton = ({
   badge,
   children,
   contentClassName,
+  globalOpen,
+  onGlobalOpenChange,
 }: {
   icon: string
   title: string
   badge?: number | string
   children: React.ReactNode
   contentClassName?: string
+  globalOpen?: boolean
+  onGlobalOpenChange?: (
+    open: boolean,
+    setGallerySetting: (setting: any) => void,
+  ) => void
 }) => {
   const isMobile = useMobile()
   const [open, setOpen] = useState(false)
@@ -303,6 +257,8 @@ const ResponsiveActionButton = ({
       title={title}
       badge={badge}
       contentClassName={contentClassName}
+      open={globalOpen}
+      onOpenChange={onGlobalOpenChange}
     >
       {children}
     </DesktopActionButton>
@@ -311,8 +267,15 @@ const ResponsiveActionButton = ({
 
 export const ActionGroup = () => {
   const { t } = useTranslation()
-  const [gallerySetting] = useAtom(gallerySettingAtom)
+  const [gallerySetting, setGallerySetting] = useAtom(gallerySettingAtom)
   const navigate = useNavigate()
+
+  const onTagsPanelOpenChange = (open: boolean) => {
+    setGallerySetting((prev: any) => ({
+      ...prev,
+      isTagsPanelOpen: open,
+    }))
+  }
 
   return (
     <div className="flex items-center justify-center gap-3">
@@ -327,17 +290,25 @@ export const ActionGroup = () => {
         <i className="i-mingcute-map-pin-line text-base text-gray-600 dark:text-gray-300" />
       </Button>
 
-      {/* 标签筛选按钮 */}
+      {/* 过滤按钮 */}
       <ResponsiveActionButton
-        icon="i-mingcute-tag-line"
-        title={t('action.tag.filter')}
+        icon="i-mingcute-filter-line"
+        title={t('action.filter.title')}
         badge={
-          gallerySetting.selectedTags.length > 0
-            ? gallerySetting.selectedTags.length
+          gallerySetting.selectedTags.length +
+            gallerySetting.selectedCameras.length +
+            gallerySetting.selectedLenses.length >
+          0
+            ? gallerySetting.selectedTags.length +
+              gallerySetting.selectedCameras.length +
+              gallerySetting.selectedLenses.length
             : undefined
         }
+        // 使用全局状态实现滚动时自动收起标签面板
+        globalOpen={gallerySetting.isTagsPanelOpen}
+        onGlobalOpenChange={onTagsPanelOpenChange}
       >
-        <TagsPanel />
+        <FilterPanel />
       </ResponsiveActionButton>
 
       {/* 列数调整按钮 */}
@@ -369,7 +340,7 @@ export const ActionGroup = () => {
 
 const panelMap = {
   sort: SortPanel,
-  tags: TagsPanel,
+  tags: FilterPanel,
   columns: ColumnsPanel,
 }
 

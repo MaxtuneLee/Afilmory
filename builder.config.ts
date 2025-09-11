@@ -36,6 +36,9 @@ export interface BuilderConfig {
 
     // 是否在构建完成后显示详细统计
     showDetailedStats: boolean
+
+    // 摘要后缀长度（0表示不添加后缀，>0表示添加sha256摘要的前N个字符作为后缀）
+    digestSuffixLength?: number
   }
 
   // 日志配置
@@ -97,6 +100,7 @@ export const defaultBuilderConfig: BuilderConfig = {
     enableLivePhotoDetection: true,
     showProgress: true,
     showDetailedStats: true,
+    digestSuffixLength: 0,
   },
 
   logging: {

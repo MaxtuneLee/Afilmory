@@ -11,7 +11,7 @@ const cleanExifValue = (value: string | null | undefined): string | null => {
   if (!value) return null
 
   // Remove parenthetical descriptions like "(medium soft)" from "-1 (medium soft)"
-  const cleaned = value.replace(/\s*\([^)]*\)$/, '')
+  const cleaned = value.toString().replace(/\s*\([^)]*\)$/, '')
 
   return cleaned.trim() || null
 }
@@ -343,6 +343,9 @@ export const formatExifData = (exif: PickedExif | null) => {
   // 色彩空间 - with translation
   const colorSpace = translateColorSpace(exif.ColorSpace || null)
 
+  // 评分
+  const rating = exif.Rating
+
   const GPSAltitudeIsAboveSeaLevel = exif.GPSAltitudeRef === 'Above Sea Level'
 
   // GPS 信息
@@ -421,6 +424,7 @@ export const formatExifData = (exif: PickedExif | null) => {
 
     fujiRecipe: exif.FujiRecipe ? processFujiRecipe(exif.FujiRecipe) : null,
     exposureProgram,
+    rating,
   }
 }
 

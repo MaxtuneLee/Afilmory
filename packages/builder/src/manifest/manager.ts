@@ -5,7 +5,11 @@ import { workdir } from '@afilmory/builder/path.js'
 import type { _Object } from '@aws-sdk/client-s3'
 
 import { logger } from '../logger/index.js'
-import type { AfilmoryManifest } from '../types/manifest.js'
+import type {
+  AfilmoryManifest,
+  CameraInfo,
+  LensInfo,
+} from '../types/manifest.js'
 import type { PhotoManifestItem } from '../types/photo.js'
 
 const manifestPath = path.join(workdir, 'src/data/photos-manifest.json')
@@ -20,18 +24,31 @@ export async function loadExistingManifest(): Promise<AfilmoryManifest> {
       '🔍 未找到 manifest 文件/解析失败，创建新的 manifest 文件...',
     )
     return {
-      version: 'v5',
+      version: 'v6',
       data: [],
+      cameras: [],
+      lenses: [],
     }
   }
 
-  if (manifest.version !== 'v5') {
+  if (manifest.version !== 'v6') {
     logger.fs.error('🔍 无效的 manifest 版本，创建新的 manifest 文件...')
     return {
-      version: 'v5',
+      version: 'v6',
       data: [],
+      cameras: [],
+      lenses: [],
     }
   }
+
+  // 向后兼容：如果现有 manifest 没有 cameras 和 lenses 字段，则添加空数组
+  if (!manifest.cameras) {
+    manifest.cameras = []
+  }
+  if (!manifest.lenses) {
+    manifest.lenses = []
+  }
+
   return manifest
 }
 
@@ -50,7 +67,11 @@ export function needsUpdate(
 }
 
 // 保存 manifest
-export async function saveManifest(items: PhotoManifestItem[]): Promise<void> {
+export async function saveManifest(
+  items: PhotoManifestItem[],
+  cameras: CameraInfo[] = [],
+  lenses: LensInfo[] = [],
+): Promise<void> {
   // 按日期排序（最新的在前）
   const sortedManifest = [...items].sort(
     (a, b) => new Date(b.dateTaken).getTime() - new Date(a.dateTaken).getTime(),
@@ -61,8 +82,10 @@ export async function saveManifest(items: PhotoManifestItem[]): Promise<void> {
     manifestPath,
     JSON.stringify(
       {
-        version: 'v5',
+        version: 'v6',
         data: sortedManifest,
+        cameras,
+        lenses,
       } as AfilmoryManifest,
       null,
       2,
@@ -70,6 +93,7 @@ export async function saveManifest(items: PhotoManifestItem[]): Promise<void> {
   )
 
   logger.fs.info(`📁 Manifest 保存至： ${manifestPath}`)
+  logger.fs.info(`📷 包含 ${cameras.length} 个相机，🔍 ${lenses.length} 个镜头`)
 }
 
 // 检测并处理已删除的图片

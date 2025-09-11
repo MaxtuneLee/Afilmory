@@ -1,6 +1,6 @@
 import { photoLoader } from '@afilmory/data'
 import { m } from 'motion/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 
@@ -29,14 +29,39 @@ export const MapSection = () => {
 
 const MapSectionContent = () => {
   const { t } = useTranslation()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Photo markers state and loading logic
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [markers, setMarkers] = useState<PhotoMarker[]>([])
 
-  // Calculate bounds from markers
+  // Track if this is the initial load to control auto fit bounds
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  // Handle marker click - update URL parameters
+  const handleMarkerClick = useCallback(
+    (marker: PhotoMarker) => {
+      const newSearchParams = new URLSearchParams(searchParams)
+
+      // Check if this marker is already selected
+      const currentPhotoId = searchParams.get('photoId')
+
+      if (currentPhotoId === marker.id) {
+        // If already selected, deselect by removing the photoId parameter
+        newSearchParams.delete('photoId')
+      } else {
+        // Select the new marker
+        newSearchParams.set('photoId', marker.id)
+      }
+
+      setSearchParams(newSearchParams, { replace: true })
+
+      // Mark that this is no longer the initial load
+      setIsInitialLoad(false)
+    },
+    [searchParams, setSearchParams],
+  )
   const bounds = useMemo<MapBounds | null>(() => {
     if (markers.length === 0) return null
     return calculateMapBounds(markers)
@@ -74,7 +99,7 @@ const MapSectionContent = () => {
     if (photoIdParam) {
       const photo = photoLoader.getPhoto(photoIdParam)
       const gpsData = convertExifGPSToDecimal(photo?.exif ?? null)
-      
+
       if (gpsData) {
         return {
           latitude: gpsData.latitude,
@@ -131,7 +156,7 @@ const MapSectionContent = () => {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="absolute h-full w-full">
       {/* Back button */}
       <MapBackButton />
 
@@ -148,8 +173,11 @@ const MapSectionContent = () => {
         <GenericMap
           markers={markers}
           initialViewState={initialViewState}
-          autoFitBounds={latitude === null || longitude === null}
+          autoFitBounds={
+            isInitialLoad && latitude === null && longitude === null
+          }
           selectedMarkerId={photoId}
+          onMarkerClick={handleMarkerClick}
           className="h-full w-full"
         />
       </m.div>

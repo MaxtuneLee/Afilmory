@@ -38,6 +38,7 @@ interface Author {
 interface Social {
   twitter?: string
   github?: string
+  rss?: boolean
 }
 
 const defaultConfig: SiteConfig = {

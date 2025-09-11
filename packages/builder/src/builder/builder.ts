@@ -14,7 +14,11 @@ import {
 import type { PhotoProcessorOptions } from '../photo/processor.js'
 import { processPhoto } from '../photo/processor.js'
 import { StorageManager } from '../storage/index.js'
-import type { AfilmoryManifest } from '../types/manifest.js'
+import type {
+  AfilmoryManifest,
+  CameraInfo,
+  LensInfo,
+} from '../types/manifest.js'
 import type { PhotoManifestItem, ProcessPhotoResult } from '../types/photo.js'
 import { ClusterPool } from '../worker/cluster-pool.js'
 import { WorkerPool } from '../worker/pool.js'
@@ -278,8 +282,13 @@ class PhotoGalleryBuilder {
 
     // 检测并处理已删除的图片
     deletedCount = await handleDeletedPhotos(manifest)
+
+    // 生成相机和镜头集合
+    const cameras = this.generateCameraCollection(manifest)
+    const lenses = this.generateLensCollection(manifest)
+
     // 保存 manifest
-    await saveManifest(manifest)
+    await saveManifest(manifest, cameras, lenses)
 
     // 显示构建结果
     if (this.config.options.showDetailedStats) {
@@ -312,8 +321,10 @@ class PhotoGalleryBuilder {
   ): Promise<AfilmoryManifest> {
     return options.isForceMode || options.isForceManifest
       ? {
-          version: 'v5',
+          version: 'v6',
           data: [],
+          cameras: [],
+          lenses: [],
         }
       : await loadExistingManifest()
   }
@@ -449,6 +460,72 @@ class PhotoGalleryBuilder {
     }
 
     return tasksToProcess
+  }
+
+  /**
+   * 生成相机信息集合
+   * @param manifest 照片清单数组
+   * @returns 唯一相机信息数组
+   */
+  private generateCameraCollection(
+    manifest: PhotoManifestItem[],
+  ): CameraInfo[] {
+    const cameraMap = new Map<string, CameraInfo>()
+
+    for (const photo of manifest) {
+      if (!photo.exif?.Make || !photo.exif?.Model) continue
+
+      const make = photo.exif.Make.trim()
+      const model = photo.exif.Model.trim()
+      const displayName = `${make} ${model}`
+
+      // 使用 displayName 作为唯一键，避免重复
+      if (!cameraMap.has(displayName)) {
+        cameraMap.set(displayName, {
+          make,
+          model,
+          displayName,
+        })
+      }
+    }
+
+    // 按 displayName 排序返回
+    return Array.from(cameraMap.values()).sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    )
+  }
+
+  /**
+   * 生成镜头信息集合
+   * @param manifest 照片清单数组
+   * @returns 唯一镜头信息数组
+   */
+  private generateLensCollection(manifest: PhotoManifestItem[]): LensInfo[] {
+    const lensMap = new Map<string, LensInfo>()
+
+    for (const photo of manifest) {
+      if (!photo.exif?.LensModel) continue
+
+      const lensModel = photo.exif.LensModel.trim()
+      const lensMake = photo.exif.LensMake?.trim()
+
+      // 生成显示名称：如果有厂商信息则包含，否则只显示型号
+      const displayName = lensMake ? `${lensMake} ${lensModel}` : lensModel
+
+      // 使用 displayName 作为唯一键，避免重复
+      if (!lensMap.has(displayName)) {
+        lensMap.set(displayName, {
+          make: lensMake,
+          model: lensModel,
+          displayName,
+        })
+      }
+    }
+
+    // 按 displayName 排序返回
+    return Array.from(lensMap.values()).sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    )
   }
 }
 

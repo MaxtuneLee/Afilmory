@@ -52,12 +52,13 @@ export function convertExifGPSToDecimal(exif: PickedExif | null): {
         ? GPSDirection.West
         : GPSDirection.East
 
-    // Apply reference direction to coordinates
-    if (latitudeRef === GPSDirection.South) {
+    // Apply reference direction to coordinates only if they're positive
+    // Some EXIF tools already provide properly signed coordinates
+    if (latitudeRef === GPSDirection.South && latitude > 0) {
       latitude = -latitude
     }
 
-    if (longitudeRef === GPSDirection.West) {
+    if (longitudeRef === GPSDirection.West && longitude > 0) {
       longitude = -longitude
     }
 
@@ -84,7 +85,14 @@ export function convertExifGPSToDecimal(exif: PickedExif | null): {
       return null
     }
 
-    return { latitude, longitude, latitudeRef, longitudeRef, altitude, altitudeRef }
+    return {
+      latitude,
+      longitude,
+      latitudeRef,
+      longitudeRef,
+      altitude,
+      altitudeRef,
+    }
   } catch (error) {
     console.warn('Failed to parse GPS coordinates from EXIF:', error)
     return null
@@ -131,7 +139,14 @@ export function convertPhotoToMarkerFromEXIF(
     return null
   }
 
-  const { latitude, longitude, latitudeRef, longitudeRef, altitude, altitudeRef } = gpsData
+  const {
+    latitude,
+    longitude,
+    latitudeRef,
+    longitudeRef,
+    altitude,
+    altitudeRef,
+  } = gpsData
 
   return {
     id: photo.id,

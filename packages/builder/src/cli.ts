@@ -286,6 +286,9 @@ async function main() {
     logger.main.info(
       `   Live Photo 检测：${config.options.enableLivePhotoDetection ? '启用' : '禁用'}`,
     )
+    logger.main.info(
+      `   照片后缀摘要长度：${config.options.digestSuffixLength}`,
+    )
     logger.main.info(`   Worker 数：${config.performance.worker.workerCount}`)
     logger.main.info(`   Worker 超时：${config.performance.worker.timeout}ms`)
     logger.main.info(

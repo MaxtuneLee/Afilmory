@@ -1,14 +1,12 @@
-import { photoLoader } from '@afilmory/data'
 import { siteConfig } from '@config'
 import { repository } from '@pkg'
 import * as AvatarPrimitive from '@radix-ui/react-avatar'
 import { useTranslation } from 'react-i18next'
 
+import { usePhotos } from '~/hooks/usePhotoViewer'
 import { clsxm } from '~/lib/cn'
 
 import { ActionGroup } from './ActionGroup'
-
-const data = photoLoader.getPhotos()
 
 export const MasonryHeaderMasonryItem = ({
   style,
@@ -19,6 +17,7 @@ export const MasonryHeaderMasonryItem = ({
 }) => {
   const { t } = useTranslation()
   const { i18n } = useTranslation()
+  const visiblePhotoCount = usePhotos().length
   return (
     <div
       className={clsxm(
@@ -84,11 +83,21 @@ export const MasonryHeaderMasonryItem = ({
                 <i className="i-mingcute-twitter-fill text-sm" />
               </a>
             )}
+            {siteConfig.social.rss && (
+              <a
+                href="/feed.xml"
+                target="_blank"
+                className="text-text-secondary flex items-center justify-center p-2 duration-200 hover:text-[#ec672c]"
+                title="RSS"
+              >
+                <i className="i-mingcute-rss-2-fill text-sm" />
+              </a>
+            )}
           </div>
         )}
 
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          {t('gallery.photos', { count: data?.length || 0 })}
+          {t('gallery.photos', { count: visiblePhotoCount || 0 })}
         </p>
       </div>
 
