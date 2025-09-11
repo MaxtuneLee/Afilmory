@@ -8,8 +8,9 @@ import Route4 from '../contents/deployment/github-action.mdx'
 import Route5 from '../contents/deployment/github-pages.mdx'
 import Route1 from '../contents/deployment/index.mdx'
 import Route6 from '../contents/deployment/vercel.mdx'
+import Route7 from '../contents/docs-site.mdx'
 import Route0 from '../contents/index.mdx'
-import Route7 from '../contents/storage/index.mdx'
+import Route8 from '../contents/storage/index.mdx'
 
 export interface RouteConfig {
   path: string
@@ -97,8 +98,19 @@ export const routes: RouteConfig[] = [
     },
   },
   {
-    path: '/storage',
+    path: '/docs-site',
     component: Route7,
+    title: 'Docs site',
+    meta: {
+      title: 'Docs site',
+      description: 'Docs site introduction and contribution guide',
+      createdAt: '2025-09-11T17:05:55+08:00',
+      lastModified: '2025-09-11T17:05:55+08:00',
+    },
+  },
+  {
+    path: '/storage',
+    component: Route8,
     title: 'Storage providers',
     meta: {
       title: 'Storage providers',

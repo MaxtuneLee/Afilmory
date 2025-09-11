@@ -341,6 +341,150 @@ export const tocData: FileToc[] = [
     ],
   },
   {
+    file: 'docs-site.mdx',
+    path: '/docs-site',
+    title: 'Docs site',
+    toc: [
+      {
+        id: 'heading-afilmory-docs-site',
+        level: 1,
+        text: 'Afilmory Docs Site',
+        children: [
+          {
+            id: 'heading-features',
+            level: 2,
+            text: 'Features',
+            children: [],
+          },
+          {
+            id: 'heading-quick-start',
+            level: 2,
+            text: 'Quick Start',
+            children: [
+              {
+                id: 'heading-development',
+                level: 3,
+                text: 'Development',
+                children: [],
+              },
+              {
+                id: 'heading-building',
+                level: 3,
+                text: 'Building',
+                children: [],
+              },
+              {
+                id: 'heading-preview',
+                level: 3,
+                text: 'Preview',
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 'heading-project-structure',
+            level: 2,
+            text: 'Project Structure',
+            children: [],
+          },
+          {
+            id: 'heading-writing-documentation',
+            level: 2,
+            text: 'Writing Documentation',
+            children: [
+              {
+                id: 'heading-file-based-routing',
+                level: 3,
+                text: 'File-based Routing',
+                children: [],
+              },
+              {
+                id: 'heading-mdx-format',
+                level: 3,
+                text: 'MDX Format',
+                children: [],
+              },
+              {
+                id: 'heading-frontmatter',
+                level: 3,
+                text: 'Frontmatter',
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 'heading-development-guide',
+            level: 2,
+            text: 'Development Guide',
+            children: [
+              {
+                id: 'heading-adding-new-content',
+                level: 3,
+                text: 'Adding New Content',
+                children: [],
+              },
+              {
+                id: 'heading-custom-components',
+                level: 3,
+                text: 'Custom Components',
+                children: [],
+              },
+              {
+                id: 'heading-styling',
+                level: 3,
+                text: 'Styling',
+                children: [],
+              },
+              {
+                id: 'heading-route-generation-plugin',
+                level: 3,
+                text: 'Route Generation Plugin',
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 'heading-configuration',
+            level: 2,
+            text: 'Configuration',
+            children: [
+              {
+                id: 'heading-vite-configuration',
+                level: 3,
+                text: 'Vite Configuration',
+                children: [],
+              },
+              {
+                id: 'heading-supported-languages',
+                level: 3,
+                text: 'Supported Languages',
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 'heading-deployment',
+            level: 2,
+            text: 'Deployment',
+            children: [],
+          },
+          {
+            id: 'heading-scripts-reference',
+            level: 2,
+            text: 'Scripts Reference',
+            children: [],
+          },
+          {
+            id: 'heading-contributing',
+            level: 2,
+            text: 'Contributing',
+            children: [],
+          },
+        ],
+      },
+    ],
+  },
+  {
     file: 'storage/index.mdx',
     path: '/storage',
     title: 'Storage providers',

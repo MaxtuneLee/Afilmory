@@ -56,6 +56,7 @@ export default defineConfig({
                 'bash',
                 'yaml',
                 'dockerfile',
+                'css',
               ],
             },
           ],
