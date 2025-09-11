@@ -99,7 +99,11 @@ This is a pnpm workspace with multiple applications and packages:
 - Use flat keys with `.` separation (e.g., `exif.camera.model`)
 - Support pluralization with `_one` and `_other` suffixes
 - Modify English first, then other languages (ESLint auto-removes unused keys)
-- Avoid nested key conflicts in flat structure
+- **CRITICAL: Avoid nested key conflicts in flat structure**
+  - ❌ WRONG: `"action.tag.mode.and": "AND"` + `"action.tag.mode.and.tooltip": "..."`
+  - ✅ CORRECT: `"action.tag.mode.and": "AND"` + `"action.tag.tooltip.and": "..."`
+  - Rule: A key cannot be both a string value AND a parent object
+  - Each key must be completely independent in the flat structure
 
 ### Testing Strategy
 - Check README.md and package.json scripts for test commands

@@ -9,7 +9,6 @@ import { Spring } from '~/lib/spring'
 import { ContextMenuProvider } from './context-menu-provider'
 import { EventProvider } from './event-provider'
 import { I18nProvider } from './i18n-provider'
-import { SettingSync } from './setting-sync'
 import { StableRouterProvider } from './stable-router-provider'
 
 export const RootProviders: FC<PropsWithChildren> = ({ children }) => (
@@ -18,7 +17,7 @@ export const RootProviders: FC<PropsWithChildren> = ({ children }) => (
       <Provider store={jotaiStore}>
         <EventProvider />
         <StableRouterProvider />
-        <SettingSync />
+
         <ContextMenuProvider />
         <I18nProvider>{children}</I18nProvider>
       </Provider>

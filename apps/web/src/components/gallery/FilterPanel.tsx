@@ -7,6 +7,8 @@ import { gallerySettingAtom } from '~/atoms/app'
 import { Button } from '~/components/ui/button'
 import { clsxm } from '~/lib/cn'
 
+import { Checkbox } from '../ui/checkbox'
+
 const allTags = photoLoader.getAllTags()
 const allCameras = photoLoader.getAllCameras()
 const allLenses = photoLoader.getAllLenses()
@@ -14,9 +16,9 @@ const allLenses = photoLoader.getAllLenses()
 export const FilterPanel = () => {
   const { t } = useTranslation()
   const [gallerySetting, setGallerySetting] = useAtom(gallerySettingAtom)
-  const [activeTab, setActiveTab] = useState<'tags' | 'cameras' | 'lenses'>(
-    'tags',
-  )
+  const [activeTab, setActiveTab] = useState<
+    'tags' | 'cameras' | 'lenses' | 'ratings'
+  >('tags')
   const [tagSearchQuery, setTagSearchQuery] = useState(
     gallerySetting.tagSearchQuery,
   )
@@ -25,6 +27,9 @@ export const FilterPanel = () => {
   )
   const [lensSearchQuery, setLensSearchQuery] = useState(
     gallerySetting.lensSearchQuery,
+  )
+  const [ratingSearchQuery, setRatingSearchQuery] = useState(
+    gallerySetting.ratingSearchQuery,
   )
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -112,6 +117,35 @@ export const FilterPanel = () => {
     setLensSearchQuery('')
   }, [setGallerySetting])
 
+  const setRating = useCallback(
+    (rating: number | null) => {
+      setGallerySetting((prev) => ({
+        ...prev,
+        selectedRatings: rating,
+      }))
+    },
+    [setGallerySetting],
+  )
+
+  const clearRatings = useCallback(() => {
+    setGallerySetting((prev) => ({
+      ...prev,
+      selectedRatings: null,
+      ratingSearchQuery: '',
+    }))
+    setRatingSearchQuery('')
+  }, [setGallerySetting])
+
+  const setTagFilterMode = useCallback(
+    (mode: 'union' | 'intersection') => {
+      setGallerySetting((prev) => ({
+        ...prev,
+        tagFilterMode: mode,
+      }))
+    },
+    [setGallerySetting],
+  )
+
   // Search handlers with useCallback
   const onTagSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,6 +178,18 @@ export const FilterPanel = () => {
       setGallerySetting((prev) => ({
         ...prev,
         lensSearchQuery: query,
+      }))
+    },
+    [setGallerySetting],
+  )
+
+  const onRatingSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const query = e.target.value
+      setRatingSearchQuery(query)
+      setGallerySetting((prev) => ({
+        ...prev,
+        ratingSearchQuery: query,
       }))
     },
     [setGallerySetting],
@@ -224,27 +270,47 @@ export const FilterPanel = () => {
         onClear: clearLenses,
         onSearchChange: onLensSearchChange,
       },
+      {
+        id: 'ratings' as const,
+        label: t('action.rating.filter'),
+        icon: 'i-mingcute-star-line',
+        count: gallerySetting.selectedRatings !== null ? 1 : 0,
+        data: [] as string[],
+        filteredData: [] as string[],
+        selectedItems: [] as string[],
+        searchQuery: ratingSearchQuery,
+        searchPlaceholder: t('action.rating.search'),
+        emptyMessage: '',
+        notFoundMessage: '',
+        onToggle: () => {},
+        onClear: clearRatings,
+        onSearchChange: onRatingSearchChange,
+      },
     ],
     [
       t,
       gallerySetting.selectedTags,
       gallerySetting.selectedCameras,
       gallerySetting.selectedLenses,
+      gallerySetting.selectedRatings,
       filteredTags,
       filteredCameras,
       filteredLenses,
       tagSearchQuery,
       cameraSearchQuery,
       lensSearchQuery,
+      ratingSearchQuery,
       toggleTag,
       toggleCamera,
       toggleLens,
       clearTags,
       clearCameras,
       clearLenses,
+      clearRatings,
       onTagSearchChange,
       onCameraSearchChange,
       onLensSearchChange,
+      onRatingSearchChange,
     ],
   )
 
@@ -254,7 +320,7 @@ export const FilterPanel = () => {
   )
 
   return (
-    <div className="lg:pb-safe-2 w-full p-2 pb-0 text-sm lg:w-80 lg:p-0">
+    <div className="lg:pb-safe-2 w-full p-2 pb-0 text-sm lg:w-100 lg:p-0">
       {/* Header with title */}
       <div className="relative mb-2 flex items-center justify-between">
         <h3 className="flex h-6 items-center px-2 text-base font-medium lg:h-8">
@@ -272,9 +338,12 @@ export const FilterPanel = () => {
               selectedTags: [],
               selectedCameras: [],
               selectedLenses: [],
+              selectedRatings: null,
+              tagFilterMode: 'union',
               tagSearchQuery: '',
               cameraSearchQuery: '',
               lensSearchQuery: '',
+              ratingSearchQuery: '',
             }))
           }}
         >
@@ -315,18 +384,20 @@ export const FilterPanel = () => {
         {/* Search and Clear section - Aligned on same baseline */}
         <div className="px-2">
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <input
-                ref={activeTab === currentTab.id ? inputRef : undefined}
-                type="text"
-                placeholder={currentTab.searchPlaceholder}
-                value={currentTab.searchQuery}
-                onChange={currentTab.onSearchChange}
-                className="w-full rounded-md border border-gray-200 bg-transparent px-3 py-2 pr-9 text-sm placeholder:text-gray-500 focus:border-gray-400 focus:outline-none dark:border-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-gray-500"
-              />
-              <i className="i-mingcute-search-line absolute top-1/2 right-3 -translate-y-1/2 text-gray-400" />
-            </div>
-            {currentTab.count > 0 && (
+            {activeTab !== 'ratings' && (
+              <div className="relative flex-1">
+                <input
+                  ref={activeTab === currentTab.id ? inputRef : undefined}
+                  type="text"
+                  placeholder={currentTab.searchPlaceholder}
+                  value={currentTab.searchQuery}
+                  onChange={currentTab.onSearchChange}
+                  className="w-full rounded-md border border-gray-200 bg-transparent px-3 py-2 pr-9 text-sm placeholder:text-gray-500 focus:border-gray-400 focus:outline-none dark:border-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-gray-500"
+                />
+                <i className="i-mingcute-search-line absolute top-1/2 right-3 -translate-y-1/2 text-gray-400" />
+              </div>
+            )}
+            {currentTab.count > 0 && activeTab !== 'ratings' && (
               <Button
                 variant="ghost"
                 size="xs"
@@ -340,8 +411,15 @@ export const FilterPanel = () => {
           </div>
         </div>
 
-        {/* Content area - Clean list without background */}
-        {currentTab.data.length === 0 ? (
+        {/* Content area - Special handling for ratings tab */}
+        {activeTab === 'ratings' ? (
+          <div className="pb-safe-offset-4 lg:pb-safe -mx-4 -mb-4 max-h-64 overflow-y-auto px-4 lg:mx-0 lg:mb-0 lg:px-0">
+            <StarRating
+              value={gallerySetting.selectedRatings}
+              onChange={setRating}
+            />
+          </div>
+        ) : currentTab.data.length === 0 ? (
           <div className="px-3 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
             {currentTab.emptyMessage}
           </div>
@@ -350,24 +428,90 @@ export const FilterPanel = () => {
             {currentTab.notFoundMessage}
           </div>
         ) : (
-          <div className="pb-safe-offset-4 lg:pb-safe -mx-4 -mb-4 max-h-64 overflow-y-auto px-4 lg:mx-0 lg:mb-0 lg:px-0">
-            {currentTab.filteredData.map((item) => (
-              <div
-                key={item}
-                onClick={() => currentTab.onToggle(item)}
-                className={clsxm(
-                  'hover:bg-accent/50 flex cursor-pointer items-center rounded-md bg-transparent px-2 py-2.5 transition-colors lg:py-2',
-                  currentTab.selectedItems.includes(item) && 'bg-accent/20',
-                )}
-              >
-                <span className="mr-2 flex-1 truncate">{item}</span>
-                {currentTab.selectedItems.includes(item) && (
-                  <i className="i-mingcute-check-line ml-auto text-green-600 dark:text-green-400" />
-                )}
+          <>
+            {/* Tag Filter Mode Toggle - Only show for tags tab when tags are selected */}
+            {activeTab === 'tags' && (
+              <div className="mb-3 flex items-center gap-3 px-2 text-xs text-gray-600 dark:text-gray-400">
+                <span>{t('action.tag.match.label')}</span>
+                <label className="flex cursor-pointer items-center gap-1.5">
+                  <Checkbox
+                    checked={gallerySetting.tagFilterMode === 'union'}
+                    onCheckedChange={() => setTagFilterMode('union')}
+                  />
+                  <span>{t('action.tag.match.any')}</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-1.5">
+                  <Checkbox
+                    checked={gallerySetting.tagFilterMode === 'intersection'}
+                    onCheckedChange={() => setTagFilterMode('intersection')}
+                  />
+                  <span>{t('action.tag.match.all')}</span>
+                </label>
               </div>
-            ))}
-          </div>
+            )}
+
+            <div className="pb-safe-offset-4 lg:pb-safe -mx-4 -mb-4 max-h-64 overflow-y-auto px-4 lg:mx-0 lg:mb-0 lg:px-0">
+              {currentTab.filteredData.map((item) => (
+                <div
+                  key={item}
+                  onClick={() => currentTab.onToggle(item)}
+                  className={clsxm(
+                    'hover:bg-accent/50 flex cursor-pointer items-center rounded-md bg-transparent px-2 py-2.5 transition-colors lg:py-2',
+                    currentTab.selectedItems.includes(item) && 'bg-accent/20',
+                  )}
+                >
+                  <span className="mr-2 flex-1 truncate">{item}</span>
+                  {currentTab.selectedItems.includes(item) && (
+                    <i className="i-mingcute-check-line ml-auto text-green-600 dark:text-green-400" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
+      </div>
+    </div>
+  )
+}
+
+// 五星评分组件
+const StarRating = ({
+  value,
+  onChange,
+}: {
+  value: number | null
+  onChange: (rating: number | null) => void
+}) => {
+  const { t } = useTranslation()
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null)
+
+  return (
+    <div className="flex flex-col items-center space-y-3 py-3">
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        {value !== null
+          ? t('action.rating.filter-above', { rating: value })
+          : t('action.rating.filter-all')}
+      </div>
+      <div className="flex space-x-1">
+        {[1, 2, 3, 4, 5].map((rating) => (
+          <button
+            key={rating}
+            type="button"
+            className="cursor-pointer transition-all duration-200 hover:scale-110"
+            onClick={() => onChange(value === rating ? null : rating)}
+            onMouseEnter={() => setHoveredRating(rating)}
+            onMouseLeave={() => setHoveredRating(null)}
+          >
+            <i
+              className={clsxm(
+                'text-2xl',
+                rating <= (hoveredRating ?? value ?? 0)
+                  ? 'i-mingcute-star-fill text-yellow-400 dark:text-yellow-500'
+                  : 'i-mingcute-star-line text-gray-300 dark:text-gray-600',
+              )}
+            />
+          </button>
+        ))}
       </div>
     </div>
   )

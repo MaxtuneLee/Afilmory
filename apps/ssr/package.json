@@ -2,7 +2,7 @@
   "name": "@afilmory/ssr",
   "type": "module",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.12.3",
+  "packageManager": "pnpm@10.15.0",
   "description": "",
   "author": "Innei",
   "license": "ISC",

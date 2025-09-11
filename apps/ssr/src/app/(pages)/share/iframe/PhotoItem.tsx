@@ -107,7 +107,7 @@ export function PhotoItem({ photo, className }: PhotoItemProps) {
           loading="lazy"
         />
         <img
-          src={photo.originalUrl}
+          src={photo.thumbnailUrl}
           alt={photo.title}
           className="absolute inset-0 size-full object-cover object-center"
           loading="lazy"

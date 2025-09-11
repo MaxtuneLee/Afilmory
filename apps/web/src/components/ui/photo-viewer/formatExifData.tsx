@@ -11,7 +11,7 @@ const cleanExifValue = (value: string | null | undefined): string | null => {
   if (!value) return null
 
   // Remove parenthetical descriptions like "(medium soft)" from "-1 (medium soft)"
-  const cleaned = value.replace(/\s*\([^)]*\)$/, '')
+  const cleaned = value.toString().replace(/\s*\([^)]*\)$/, '')
 
   return cleaned.trim() || null
 }

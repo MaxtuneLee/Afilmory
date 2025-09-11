@@ -92,25 +92,41 @@ const useStateRestoreFromUrl = () => {
     const tagsFromSearchParams = searchParams.get('tags')?.split(',')
     const camerasFromSearchParams = searchParams.get('cameras')?.split(',')
     const lensesFromSearchParams = searchParams.get('lenses')?.split(',')
+    const ratingsFromSearchParams = searchParams.get('rating')
+      ? Number(searchParams.get('rating'))
+      : null
+    const tagModeFromSearchParams = searchParams.get('tag_mode') as
+      | 'union'
+      | 'intersection'
+      | null
 
     if (
       tagsFromSearchParams ||
       camerasFromSearchParams ||
-      lensesFromSearchParams
+      lensesFromSearchParams ||
+      ratingsFromSearchParams !== null ||
+      tagModeFromSearchParams
     ) {
       setGallerySetting((prev) => ({
         ...prev,
         selectedTags: tagsFromSearchParams || prev.selectedTags,
         selectedCameras: camerasFromSearchParams || prev.selectedCameras,
         selectedLenses: lensesFromSearchParams || prev.selectedLenses,
+        selectedRatings: ratingsFromSearchParams ?? prev.selectedRatings,
+        tagFilterMode: tagModeFromSearchParams || prev.tagFilterMode,
       }))
     }
   }, [openViewer, photoId, searchParams, setGallerySetting])
 }
 
 const useSyncStateToUrl = () => {
-  const { selectedTags, selectedCameras, selectedLenses } =
-    useAtomValue(gallerySettingAtom)
+  const {
+    selectedTags,
+    selectedCameras,
+    selectedLenses,
+    selectedRatings,
+    tagFilterMode,
+  } = useAtomValue(gallerySettingAtom)
   const [_, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
 
@@ -143,17 +159,23 @@ const useSyncStateToUrl = () => {
     const tags = selectedTags.join(',')
     const cameras = selectedCameras.join(',')
     const lenses = selectedLenses.join(',')
+    const rating = selectedRatings?.toString() ?? ''
+    const tagMode = tagFilterMode === 'union' ? '' : tagFilterMode
 
     setSearchParams((search) => {
       const currentTags = search.get('tags')
       const currentCameras = search.get('cameras')
       const currentLenses = search.get('lenses')
+      const currentRating = search.get('rating')
+      const currentTagMode = search.get('tag_mode')
 
       // Check if anything has changed
       if (
         currentTags === tags &&
         currentCameras === cameras &&
-        currentLenses === lenses
+        currentLenses === lenses &&
+        currentRating === rating &&
+        currentTagMode === tagMode
       ) {
         return search
       }
@@ -181,7 +203,28 @@ const useSyncStateToUrl = () => {
         newer.delete('lenses')
       }
 
+      // Update rating
+      if (rating) {
+        newer.set('rating', rating)
+      } else {
+        newer.delete('rating')
+      }
+
+      // Update tag filter mode
+      if (tagMode) {
+        newer.set('tag_mode', tagMode)
+      } else {
+        newer.delete('tag_mode')
+      }
+
       return newer
     })
-  }, [selectedTags, selectedCameras, selectedLenses, setSearchParams])
+  }, [
+    selectedTags,
+    selectedCameras,
+    selectedLenses,
+    selectedRatings,
+    tagFilterMode,
+    setSearchParams,
+  ])
 }
