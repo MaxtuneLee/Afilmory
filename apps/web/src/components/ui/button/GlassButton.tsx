@@ -1,6 +1,4 @@
-import type {
-  HTMLMotionProps,
-} from 'motion/react'
+import type { HTMLMotionProps } from 'motion/react'
 import { m } from 'motion/react'
 import type { FC, PropsWithChildren } from 'react'
 

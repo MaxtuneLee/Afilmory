@@ -7,13 +7,18 @@ catalog:
   '@t3-oss/env-core': 0.13.8
   dotenv-expand: 12.0.2
   typescript: 5.8.3
-  'tailwind-variants': '1.0.0'
-  '@tailwindcss/postcss': '4.1.11'
-  '@tailwindcss/typography': '0.5.16'
-  'tailwind-scrollbar': '4.0.2'
-  'tailwindcss': '4.1.11'
-  'tailwindcss-animate': '1.0.7'
-  'tailwindcss-safe-area': '0.6.0'
-  'tailwindcss-uikit-colors': '1.0.0-alpha.1'
-  '@egoist/tailwindcss-icons': '1.9.0'
-  '@iconify-json/mingcute': '1.2.3'
+  tailwind-variants: 1.0.0
+  '@tailwindcss/postcss': 4.1.11
+  '@tailwindcss/typography': 0.5.16
+  tailwind-scrollbar: 4.0.2
+  tailwindcss: 4.1.11
+  tailwindcss-animate: 1.0.7
+  tailwindcss-safe-area: 0.6.0
+  tailwindcss-uikit-colors: 1.0.0-alpha.1
+  '@egoist/tailwindcss-icons': 1.9.0
+  '@iconify-json/mingcute': 1.2.3
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - bufferutil
+  - esbuild
