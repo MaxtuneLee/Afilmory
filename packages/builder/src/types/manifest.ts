@@ -1,3 +1,4 @@
+import type { ManifestVersion } from '../manifest/version'
 import type { PhotoManifestItem } from './photo'
 
 export interface CameraInfo {
@@ -13,7 +14,7 @@ export interface LensInfo {
 }
 
 export type AfilmoryManifest = {
-  version: 'v6'
+  version: ManifestVersion
   data: PhotoManifestItem[]
   cameras: CameraInfo[] // Unique cameras found in all photos
   lenses: LensInfo[] // Unique lenses found in all photos

@@ -15,7 +15,7 @@ const THUMBNAIL_WIDTH = 600
 
 // 获取缩略图路径信息
 function getThumbnailPaths(photoId: string) {
-  const filename = `${photoId}.webp`
+  const filename = `${photoId}.jpg`
   const thumbnailPath = path.join(THUMBNAIL_DIR, filename)
   const thumbnailUrl = `/thumbnails/${filename}`
 
@@ -101,9 +101,7 @@ async function generateNewThumbnail(
       .resize(THUMBNAIL_WIDTH, null, {
         withoutEnlargement: true,
       })
-      .webp({
-        quality: THUMBNAIL_QUALITY,
-      })
+      .jpeg({ quality: THUMBNAIL_QUALITY })
       .toBuffer()
 
     // 保存到文件

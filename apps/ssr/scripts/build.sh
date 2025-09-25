@@ -14,5 +14,5 @@ const jsContent = \`export default \\\`\${html.replace(/\`/g, '\\\\\`').replace(
 fs.writeFileSync('./src/index.html.ts', jsContent);
 "
 rm ./public/index.html
-pnpm build:jpg
+# pnpm build:jpg
 pnpm build:next

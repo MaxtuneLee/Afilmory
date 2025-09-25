@@ -3,49 +3,57 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.15.0",
+  "packageManager": "pnpm@10.17.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/Afilmory/Afilmory"
   },
   "scripts": {
     "build": "pnpm --filter @afilmory/ssr build",
+    "build:demo": "sh scripts/prepare-demo-data.sh && pnpm --filter web build",
     "build:manifest": "pnpm --filter @afilmory/builder cli",
     "build:update-remote-repo": "sh scripts/build-update-remote-repo.sh",
+    "create:doc": "tsx scripts/create-doc.ts",
     "dev": "pnpm --filter @afilmory/ssr dev",
+    "docs:build": "pnpm --filter @afilmory/docs build",
+    "docs:dev": "pnpm --filter @afilmory/docs dev",
+    "docs:preview": "pnpm --filter @afilmory/docs preview",
     "extract:font": "tsx scripts/extract-font-glyphs.ts",
     "format": "prettier --write \"src/**/*.ts\" ",
     "lint": "eslint --fix",
+    "migrate:manifest": "tsx scripts/migrate-manifest.ts",
     "preinstall": "sh scripts/preinstall.sh",
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "update:lastmodified": "tsx scripts/update-lastmodified.ts"
   },
   "dependencies": {
     "@afilmory/builder": "workspace:*",
     "@t3-oss/env-core": "catalog:",
-    "dotenv": "16.5.0",
-    "es-toolkit": "1.39.5",
+    "dotenv": "17.2.2",
+    "es-toolkit": "1.39.10",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@clack/prompts": "^0.11.0",
     "@innei/prettier": "0.15.0",
-    "@types/node": "24.0.4",
+    "@types/node": "24.5.2",
     "consola": "3.4.2",
     "dotenv-expand": "catalog:",
-    "eslint": "9.29.0",
-    "eslint-config-hyoban": "4.0.8",
+    "eslint": "9.36.0",
+    "eslint-config-hyoban": "4.0.10",
     "fast-glob": "3.3.3",
-    "lint-staged": "16.1.2",
+    "lint-staged": "16.1.6",
     "opentype.js": "1.3.4",
-    "prettier": "3.6.1",
-    "sharp": "0.34.2",
-    "simple-git-hooks": "2.13.0",
-    "tailwindcss": "4.1.11",
-    "tsx": "4.20.3",
+    "prettier": "3.6.2",
+    "sharp": "0.34.4",
+    "simple-git-hooks": "2.13.1",
+    "tailwindcss": "catalog:",
+    "tsx": "4.20.5",
     "typescript": "catalog:",
-    "vite": "7.0.0",
-    "vite-bundle-analyzer": "0.23.0",
-    "vite-plugin-babel": "1.3.1",
-    "vite-plugin-checker": "0.9.3",
+    "vite": "7.1.6",
+    "vite-bundle-analyzer": "1.2.3",
+    "vite-plugin-babel": "1.3.2",
+    "vite-plugin-checker": "0.10.3",
     "vite-tsconfig-paths": "5.1.4"
   },
   "simple-git-hooks": {
@@ -57,6 +65,9 @@
     ],
     "*.{js,ts,cjs,mjs,jsx,tsx,json}": [
       "eslint --fix"
+    ],
+    "*.{md,mdx}": [
+      "pnpm update:lastmodified"
     ]
   }
 }

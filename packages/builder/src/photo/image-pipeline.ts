@@ -133,7 +133,7 @@ export async function processImageWithSharp(
  * @param s3Key S3键
  * @returns 带摘要后缀的ID
  */
-function generatePhotoId(s3Key: string): string {
+async function generatePhotoId(s3Key: string): Promise<string> {
   const { options } = defaultBuilder.getConfig()
   const { digestSuffixLength } = options
   if (!digestSuffixLength || digestSuffixLength <= 0) {
@@ -157,7 +157,7 @@ export async function executePhotoProcessingPipeline(
   const loggers = getGlobalLoggers()
 
   // Generate the actual photo ID with digest suffix
-  const photoId = generatePhotoId(photoKey)
+  const photoId = await generatePhotoId(photoKey)
 
   try {
     // 1. 预处理图片
@@ -256,9 +256,11 @@ export async function processPhotoWithPipeline(
   const { photoKey, existingItem, obj, options } = context
   const loggers = getGlobalLoggers()
 
+  const photoId = await generatePhotoId(photoKey)
+
   // 检查是否需要处理
   const { shouldProcess, reason } = await shouldProcessPhoto(
-    photoKey,
+    photoId,
     existingItem,
     obj,
     options,

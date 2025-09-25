@@ -4,6 +4,8 @@ import type { _Object, S3Client } from '@aws-sdk/client-s3'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 
 import { SUPPORTED_FORMATS } from '../../constants/index.js'
+import { backoffDelay, sleep } from '../../lib/backoff.js'
+import { Semaphore } from '../../lib/semaphore.js'
 import { logger } from '../../logger/index.js'
 import { createS3Client } from '../../s3/client.js'
 import type {
@@ -26,63 +28,117 @@ function convertS3ObjectToStorageObject(s3Object: _Object): StorageObject {
 export class S3StorageProvider implements StorageProvider {
   private config: S3Config
   private s3Client: S3Client
+  private limiter: Semaphore
 
   constructor(config: S3Config) {
     this.config = config
     this.s3Client = createS3Client(config)
+    this.limiter = new Semaphore(this.config.downloadConcurrency ?? 16)
   }
 
   async getFile(key: string): Promise<Buffer | null> {
-    try {
-      logger.s3.info(`下载文件：${key}`)
-      const startTime = Date.now()
+    return await this.limiter.run(async () => {
+      const maxAttempts = this.config.maxAttempts ?? 3
+      const totalTimeoutMs = this.config.totalTimeoutMs ?? 60_000
+      const idleTimeoutMs = this.config.idleTimeoutMs ?? 10_000
+      const requestTimeoutMs = this.config.requestTimeoutMs ?? 20_000
 
-      const command = new GetObjectCommand({
-        Bucket: this.config.bucket,
-        Key: key,
-      })
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const startTime = Date.now()
+        const controller = new AbortController()
+        const totalTimer = setTimeout(() => controller.abort(), totalTimeoutMs)
+        let idleTimer: NodeJS.Timeout | null = null
+        let firstByteAt: number | null = null
 
-      const response = await this.s3Client.send(command)
+        try {
+          logger.s3.info(`下载开始：${key} (attempt ${attempt}/${maxAttempts})`)
 
-      if (!response.Body) {
-        logger.s3.error(`S3 响应中没有 Body: ${key}`)
-        return null
-      }
+          const command = new GetObjectCommand({
+            Bucket: this.config.bucket,
+            Key: key,
+          })
 
-      // 处理不同类型的 Body
-      if (response.Body instanceof Buffer) {
-        const duration = Date.now() - startTime
-        const sizeKB = Math.round(response.Body.length / 1024)
-        logger.s3.success(`下载完成：${key} (${sizeKB}KB, ${duration}ms)`)
-        return response.Body
-      }
+          const response = await this.s3Client.send(command, {
+            abortSignal: controller.signal,
+            requestTimeout: requestTimeoutMs,
+          })
 
-      // 如果是 Readable stream
-      const chunks: Uint8Array[] = []
-      const stream = response.Body as NodeJS.ReadableStream
+          if (!response.Body) {
+            logger.s3.error(`S3 响应中没有 Body: ${key}`)
+            return null
+          }
 
-      return new Promise((resolve, reject) => {
-        stream.on('data', (chunk: Uint8Array) => {
-          chunks.push(chunk)
-        })
+          // 如果 Body 已经是 Buffer
+          if (response.Body instanceof Buffer) {
+            const duration = Date.now() - startTime
+            const sizeKB = Math.round(response.Body.length / 1024)
+            logger.s3.success(
+              `下载完成：${key} (${sizeKB}KB, ${duration}ms, attempt ${attempt})`,
+            )
+            return response.Body
+          }
 
-        stream.on('end', () => {
-          const buffer = Buffer.concat(chunks)
+          // 以流方式读取并监控首字节与空闲超时
+          const chunks: Uint8Array[] = []
+          const stream = response.Body as NodeJS.ReadableStream
+
+          const resetIdle = () => {
+            if (idleTimer) clearTimeout(idleTimer)
+            idleTimer = setTimeout(() => {
+              controller.abort()
+            }, idleTimeoutMs)
+          }
+
+          resetIdle()
+
+          const buffer: Buffer = await new Promise((resolve, reject) => {
+            stream.on('data', (chunk: Uint8Array) => {
+              if (!firstByteAt) firstByteAt = Date.now()
+              chunks.push(chunk)
+              resetIdle()
+            })
+
+            stream.on('end', () => {
+              if (idleTimer) clearTimeout(idleTimer)
+              const buf = Buffer.concat(chunks)
+              resolve(buf)
+            })
+
+            stream.on('error', (error) => {
+              if (idleTimer) clearTimeout(idleTimer)
+              reject(error)
+            })
+          })
+
           const duration = Date.now() - startTime
+          const ttfb = firstByteAt ? firstByteAt - startTime : duration
           const sizeKB = Math.round(buffer.length / 1024)
-          logger.s3.success(`下载完成：${key} (${sizeKB}KB, ${duration}ms)`)
-          resolve(buffer)
-        })
+          logger.s3.success(
+            `下载完成：${key} (${sizeKB}KB, ${duration}ms, TTFB ${ttfb}ms, attempt ${attempt})`,
+          )
+          clearTimeout(totalTimer)
+          return buffer
+        } catch (error) {
+          const elapsed = Date.now() - startTime
+          logger.s3.warn(
+            `下载失败：${key} (attempt ${attempt}/${maxAttempts}, ${elapsed}ms)`,
+            error,
+          )
+          clearTimeout(totalTimer)
 
-        stream.on('error', (error) => {
-          logger.s3.error(`下载失败：${key}`, error)
-          reject(error)
-        })
-      })
-    } catch (error) {
-      logger.s3.error(`下载失败：${key}`, error)
+          if (attempt < maxAttempts) {
+            const delay = backoffDelay(attempt)
+            logger.s3.info(`等待 ${delay}ms 后重试：${key}`)
+            await sleep(delay)
+            continue
+          }
+          logger.s3.error(`下载最终失败：${key}`)
+          return null
+        }
+      }
+
       return null
-    }
+    })
   }
 
   async listImages(): Promise<StorageObject[]> {

@@ -2,7 +2,7 @@ import { FluentEmoji, getEmoji } from '@lobehub/fluent-emoji'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { produce } from 'immer'
 import { AnimatePresence, m } from 'motion/react'
-import type { RefObject } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ interface ReactionButtonProps {
   className?: string
   disabled?: boolean
   photoId: string
+  style?: CSSProperties
 }
 
 const reactionButton = tv({
@@ -87,6 +88,7 @@ export const ReactionButton = ({
   className,
   disabled = false,
   photoId,
+  style,
 }: ReactionButtonProps) => {
   const [panelElement, setPanelElement] = useState<HTMLDivElement | null>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -131,7 +133,7 @@ export const ReactionButton = ({
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   return (
-    <div className={clsxm(styles.base(), className)}>
+    <div className={clsxm(styles.base(), className)} style={style}>
       <DropdownMenu.Root open={isOpen}>
         <DropdownMenu.Trigger asChild>
           <m.button

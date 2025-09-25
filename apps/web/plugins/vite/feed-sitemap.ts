@@ -88,7 +88,7 @@ function generateRSSFeed(
       <description><![CDATA[${description}]]></description>
       <pubDate>${pubDate}</pubDate>
       ${photo.tags.map((tag) => `<category><![CDATA[${tag}]]></category>`).join('\n      ')}
-      <enclosure url="${photo.thumbnailUrl.startsWith('http') ? photo.thumbnailUrl : config.url + photo.thumbnailUrl}" type="image/webp" length="${photo.size}" />
+      <enclosure url="${photo.thumbnailUrl.startsWith('http') ? photo.thumbnailUrl : config.url + photo.thumbnailUrl}" type="image/jpeg" length="${photo.size}" />
 ${exifTags}
     </item>`
     })

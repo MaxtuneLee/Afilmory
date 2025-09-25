@@ -1,3 +1,4 @@
+import type { Stats } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -264,7 +265,7 @@ export class LocalStorageProvider implements StorageProvider {
   /**
    * 生成文件的 ETag
    */
-  private generateETag(stats: fs.Stats): string {
+  private generateETag(stats: Stats): string {
     return `${stats.mtime.getTime()}-${stats.size}`
   }
 

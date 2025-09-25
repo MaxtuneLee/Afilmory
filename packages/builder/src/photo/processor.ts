@@ -1,4 +1,3 @@
-
 import type { _Object } from '@aws-sdk/client-s3'
 
 import { logger } from '../logger/index.js'

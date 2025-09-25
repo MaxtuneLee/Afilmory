@@ -11,6 +11,8 @@ import type {
   LensInfo,
 } from '../types/manifest.js'
 import type { PhotoManifestItem } from '../types/photo.js'
+import { migrateManifestFileIfNeeded } from './migrate.js'
+import { CURRENT_MANIFEST_VERSION } from './version.js'
 
 const manifestPath = path.join(workdir, 'src/data/photos-manifest.json')
 
@@ -24,21 +26,16 @@ export async function loadExistingManifest(): Promise<AfilmoryManifest> {
       '🔍 未找到 manifest 文件/解析失败，创建新的 manifest 文件...',
     )
     return {
-      version: 'v6',
+      version: CURRENT_MANIFEST_VERSION,
       data: [],
       cameras: [],
       lenses: [],
     }
   }
 
-  if (manifest.version !== 'v6') {
-    logger.fs.error('🔍 无效的 manifest 版本，创建新的 manifest 文件...')
-    return {
-      version: 'v6',
-      data: [],
-      cameras: [],
-      lenses: [],
-    }
+  if (manifest.version !== CURRENT_MANIFEST_VERSION) {
+    const migrated = await migrateManifestFileIfNeeded(manifest)
+    if (migrated) return migrated
   }
 
   // 向后兼容：如果现有 manifest 没有 cameras 和 lenses 字段，则添加空数组
@@ -82,7 +79,7 @@ export async function saveManifest(
     manifestPath,
     JSON.stringify(
       {
-        version: 'v6',
+        version: CURRENT_MANIFEST_VERSION,
         data: sortedManifest,
         cameras,
         lenses,
@@ -117,7 +114,7 @@ export async function handleDeletedPhotos(
   const manifestKeySet = new Set(items.map((item) => item.id))
 
   for (const thumbnail of allThumbnails) {
-    if (!manifestKeySet.has(basename(thumbnail, '.webp'))) {
+    if (!manifestKeySet.has(basename(thumbnail, '.jpg'))) {
       await fs.unlink(path.join(workdir, 'public/thumbnails', thumbnail))
       deletedCount++
     }

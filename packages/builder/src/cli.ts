@@ -3,6 +3,7 @@ import 'dotenv-expand/config'
 import { execSync } from 'node:child_process'
 import cluster from 'node:cluster'
 import { existsSync } from 'node:fs'
+import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -182,10 +183,13 @@ async function main() {
     // 创建空的 manifest 文件（如果不存在）
     if (!existsSync(manifestSourcePath)) {
       logger.main.info('📄 创建初始 manifest 文件...')
-      await $({
-        cwd: assetsGitDir,
-        stdio: 'inherit',
-      })`echo '{"version":"v2","data":[]}' > photos-manifest.json`
+      const { CURRENT_MANIFEST_VERSION } = await import('./manifest/version.js')
+      const initial = JSON.stringify(
+        { version: CURRENT_MANIFEST_VERSION, data: [] },
+        null,
+        2,
+      )
+      await fs.writeFile(manifestSourcePath, initial)
     }
 
     // 删除 public/thumbnails 目录，并建立软连接到 assets-git/thumbnails

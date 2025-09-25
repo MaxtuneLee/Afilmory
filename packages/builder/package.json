@@ -11,16 +11,17 @@
     "cli": "tsx src/cli.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.837.0",
-    "@aws-sdk/s3-request-presigner": "3.837.0",
+    "@aws-sdk/client-s3": "3.893.0",
+    "@aws-sdk/node-http-handler": "3.374.0",
+    "@aws-sdk/s3-request-presigner": "3.893.0",
     "@vingle/bmp-js": "^0.2.5",
     "blurhash": "2.0.5",
     "dotenv-expand": "catalog:",
     "execa": "9.6.0",
-    "exiftool-vendored": "30.2.0",
+    "exiftool-vendored": "30.5.0",
     "heic-convert": "2.1.0",
-    "heic-to": "1.1.14",
-    "sharp": "0.34.2",
+    "heic-to": "1.2.2",
+    "sharp": "0.34.4",
     "thumbhash": "0.1.1"
   }
 }

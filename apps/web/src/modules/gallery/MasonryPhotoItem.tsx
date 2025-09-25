@@ -4,10 +4,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Thumbhash } from '~/components/ui/thumbhash'
-import {
-  useContextPhotos,
-  usePhotoViewer,
-} from '~/hooks/usePhotoViewer'
+import { useContextPhotos, usePhotoViewer } from '~/hooks/usePhotoViewer'
 import {
   CarbonIsoOutline,
   MaterialSymbolsShutterSpeed,
@@ -56,8 +53,13 @@ export const MasonryPhotoItem = ({
 
   const handleClick = () => {
     const photoIndex = photos.findIndex((photo) => photo.id === data.id)
-    if (photoIndex !== -1 && imageRef.current) {
-      photoViewer.openViewer(photoIndex, imageRef.current)
+    if (photoIndex !== -1) {
+      const triggerEl =
+        imageRef.current?.parentElement instanceof HTMLElement
+          ? imageRef.current.parentElement
+          : imageRef.current
+
+      photoViewer.openViewer(photoIndex, triggerEl ?? undefined)
     }
   }
 

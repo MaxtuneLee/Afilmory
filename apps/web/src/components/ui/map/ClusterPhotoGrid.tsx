@@ -27,7 +27,9 @@ export const ClusterPhotoGrid = ({
         <h3 className="text-text text-sm font-semibold">
           {t('explory.cluster.photos', { count: photos.length })}
         </h3>
-        <div className="text-text-secondary text-xs">{t('explory.cluster.click.details')}</div>
+        <div className="text-text-secondary text-xs">
+          {t('explory.cluster.click.details')}
+        </div>
       </div>
 
       {/* 照片网格 */}
@@ -104,7 +106,9 @@ export const ClusterPhotoGrid = ({
               <div className="text-text text-lg font-bold">
                 +{remainingCount}
               </div>
-              <div className="text-text-secondary text-xs">{t('explory.cluster.more')}</div>
+              <div className="text-text-secondary text-xs">
+                {t('explory.cluster.more')}
+              </div>
             </div>
           </m.div>
         )}

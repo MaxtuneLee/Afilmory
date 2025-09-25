@@ -2,6 +2,6 @@
 @plugin '@tailwindcss/typography';
 @plugin 'tailwind-scrollbar';
 @plugin 'tailwindcss-animate';
-@plugin 'tailwindcss-safe-area';
+@import 'tailwindcss-safe-area';
 @import 'tailwindcss-uikit-colors/v4/macos.css';
 @plugin '@egoist/tailwindcss-icons';

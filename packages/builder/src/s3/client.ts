@@ -1,5 +1,9 @@
+import http from 'node:http'
+import https from 'node:https'
+
 import type { S3ClientConfig } from '@aws-sdk/client-s3'
 import { S3Client } from '@aws-sdk/client-s3'
+import { NodeHttpHandler } from '@aws-sdk/node-http-handler'
 
 import type { S3Config } from '../storage/interfaces'
 
@@ -14,6 +18,17 @@ export function createS3Client(config: S3Config): S3Client {
     throw new Error('accessKeyId and secretAccessKey are required')
   }
 
+  const keepAlive = config.keepAlive ?? true
+  const maxSockets = config.maxSockets ?? 64
+  const connectionTimeout = config.connectionTimeoutMs ?? 5_000
+  const socketTimeout = config.socketTimeoutMs ?? 30_000
+  const maxAttempts = config.maxAttempts ?? 3
+  const retryMode =
+    (config.retryMode as S3ClientConfig['retryMode']) ?? 'standard'
+
+  const httpAgent = new http.Agent({ keepAlive, maxSockets })
+  const httpsAgent = new https.Agent({ keepAlive, maxSockets })
+
   const s3ClientConfig: S3ClientConfig = {
     region,
     credentials: {
@@ -25,6 +40,14 @@ export function createS3Client(config: S3Config): S3Client {
     requestChecksumCalculation: 'WHEN_REQUIRED',
     responseChecksumValidation: 'WHEN_REQUIRED',
     endpoint,
+    requestHandler: new NodeHttpHandler({
+      httpAgent,
+      httpsAgent,
+      connectionTimeout,
+      socketTimeout,
+    }),
+    maxAttempts,
+    retryMode,
   }
 
   return new S3Client(s3ClientConfig)

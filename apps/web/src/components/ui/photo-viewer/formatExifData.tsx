@@ -329,17 +329,6 @@ export const formatExifData = (exif: PickedExif | null) => {
     ? Math.round(exif.FocalPlaneYResolution)
     : null
 
-  // 像素信息
-  const pixelXDimension = exif.ImageWidth || null
-  const pixelYDimension = exif.ImageHeight || null
-  const totalPixels =
-    pixelXDimension && pixelYDimension
-      ? pixelXDimension * pixelYDimension
-      : null
-  const megaPixels = totalPixels
-    ? `${(totalPixels / 1000000).toFixed(1)}MP`
-    : null
-
   // 色彩空间 - with translation
   const colorSpace = translateColorSpace(exif.ColorSpace || null)
 
@@ -411,9 +400,6 @@ export const formatExifData = (exif: PickedExif | null) => {
     focalPlaneXResolution,
     focalPlaneYResolution,
 
-    megaPixels,
-    pixelXDimension,
-    pixelYDimension,
     whiteBalanceBias,
     wbShiftAB,
     wbShiftGM,

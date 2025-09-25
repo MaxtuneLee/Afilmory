@@ -6,9 +6,7 @@ import { gallerySettingAtom } from '~/atoms/app'
 import { DateRangeIndicator } from '~/components/ui/date-range-indicator'
 import { useScrollViewElement } from '~/components/ui/scroll-areas/hooks'
 import { useMobile } from '~/hooks/useMobile'
-import {
-  useContextPhotos,
-} from '~/hooks/usePhotoViewer'
+import { useContextPhotos } from '~/hooks/usePhotoViewer'
 import { useTypeScriptHappyCallback } from '~/hooks/useTypeScriptCallback'
 import { useVisiblePhotosDateRange } from '~/hooks/useVisiblePhotosDateRange'
 import { clsxm } from '~/lib/cn'

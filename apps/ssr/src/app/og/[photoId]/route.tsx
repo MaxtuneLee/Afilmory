@@ -27,7 +27,6 @@ export const GET = async (
 
     // 处理标签
     const tags = photo.tags?.slice(0, 3).join(' • ') || ''
-
     // Format EXIF information
     const formatExifInfo = () => {
       if (!photo.exif) return null

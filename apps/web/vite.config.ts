@@ -55,6 +55,10 @@ const ReactCompilerConfig = {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    codeInspectorPlugin({
+      bundler: 'vite',
+      hotKeys: ['altKey'],
+    }),
     react({
       babel: {
         plugins: [['babel-plugin-react-compiler', ReactCompilerConfig]],
@@ -68,10 +72,7 @@ export default defineConfig({
       enableBuild: true,
       root: __dirname,
     }),
-    codeInspectorPlugin({
-      bundler: 'vite',
-      hotKeys: ['altKey'],
-    }),
+
     createDependencyChunksPlugin([
       ['heic-to'],
       ['react', 'react-dom'],

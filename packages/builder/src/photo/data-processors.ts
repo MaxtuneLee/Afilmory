@@ -49,10 +49,10 @@ export async function processThumbnailAndBlurhash(
       const thumbnailPath = path.join(
         workdir,
         'public/thumbnails',
-        `${photoId}.webp`,
+        `${photoId}.jpg`,
       )
       const thumbnailBuffer = await fs.readFile(thumbnailPath)
-      const thumbnailUrl = `/thumbnails/${photoId}.webp`
+      const thumbnailUrl = `/thumbnails/${photoId}.jpg`
 
       loggers.blurhash.info(`复用现有 blurhash: ${photoId}`)
       loggers.thumbnail.info(`复用现有缩略图：${photoId}`)

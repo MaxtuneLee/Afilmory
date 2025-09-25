@@ -9,7 +9,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -24,6 +23,8 @@ import { Spring } from '~/lib/spring'
 import type { PhotoManifest } from '~/types/photo'
 
 import { Thumbhash } from '../thumbhash'
+import { PhotoViewerTransitionPreview } from './animations/PhotoViewerTransitionPreview'
+import { usePhotoViewerTransitions } from './animations/usePhotoViewerTransitions'
 import { ExifPanel } from './ExifPanel'
 import { GalleryThumbnail } from './GalleryThumbnail'
 import type { LoadingIndicatorRef } from './LoadingIndicator'
@@ -38,6 +39,7 @@ interface PhotoViewerProps {
   isOpen: boolean
   onClose: () => void
   onIndexChange: (index: number) => void
+  triggerElement: HTMLElement | null
 }
 
 export const PhotoViewer = ({
@@ -46,19 +48,37 @@ export const PhotoViewer = ({
   isOpen,
   onClose,
   onIndexChange,
+  triggerElement,
 }: PhotoViewerProps) => {
   const { t } = useTranslation()
-  const containerRef = useRef<HTMLDivElement>(null)
   const swiperRef = useRef<SwiperType | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
   const [showExifPanel, setShowExifPanel] = useState(false)
   const [currentBlobSrc, setCurrentBlobSrc] = useState<string | null>(null)
-  const isMobile = useMobile()
 
+  const isMobile = useMobile()
   const currentPhoto = photos[currentIndex]
 
-  // 当 PhotoViewer 关闭时重置缩放状态和面板状态
-  useLayoutEffect(() => {
+  const {
+    containerRef,
+    entryTransition,
+    exitTransition,
+    isViewerContentVisible,
+    isEntryAnimating,
+    shouldRenderBackdrop,
+    thumbHash: transitionThumbHash,
+    shouldRenderThumbhash,
+    handleEntryAnimationComplete,
+    handleExitAnimationComplete,
+  } = usePhotoViewerTransitions({
+    isOpen,
+    triggerElement,
+    currentPhoto,
+    currentBlobSrc,
+    isMobile,
+  })
+
+  useEffect(() => {
     if (!isOpen) {
       setIsImageZoomed(false)
       setShowExifPanel(false)
@@ -145,13 +165,16 @@ export const PhotoViewer = ({
 
   if (!currentPhoto) return null
 
+  const currentThumbHash = transitionThumbHash
+
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
+        {shouldRenderBackdrop && (
           <m.div
+            key="photo-viewer-backdrop"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: isOpen ? 1 : 0 }}
             exit={{ opacity: 0 }}
             transition={Spring.presets.snappy}
             className="bg-material-opaque fixed inset-0"
@@ -161,39 +184,53 @@ export const PhotoViewer = ({
       {/* 固定背景层防止透出 */}
       {/* 交叉溶解的 Blurhash 背景 */}
       <AnimatePresence mode="sync">
-        {isOpen && currentPhoto.thumbHash && (
+        {shouldRenderThumbhash && (
           <m.div
-            key={currentPhoto.id}
+            key={`${currentPhoto.id}-thumbhash`}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: isOpen ? 1 : 0 }}
             exit={{ opacity: 0 }}
             transition={Spring.presets.snappy}
             className="fixed inset-0"
           >
-            <Thumbhash
-              thumbHash={currentPhoto.thumbHash}
-              className="size-fill scale-110"
-            />
+            {currentThumbHash && (
+              <Thumbhash
+                thumbHash={currentThumbHash}
+                className="size-fill scale-110"
+              />
+            )}
           </m.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isOpen && (
-          <div
+          <m.div
             ref={containerRef}
             className="fixed inset-0 z-50 flex items-center justify-center"
-            style={{ touchAction: isMobile ? 'manipulation' : 'none' }}
+            style={{
+              touchAction: isMobile ? 'manipulation' : 'none',
+              pointerEvents:
+                !isViewerContentVisible || isEntryAnimating ? 'none' : 'auto',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isViewerContentVisible ? 1 : 0 }}
+            exit={{ opacity: 0 }}
+            transition={Spring.presets.snappy}
           >
             <div
               className={`flex size-full ${isMobile ? 'flex-col' : 'flex-row'}`}
             >
               <div className="z-[1] flex min-h-0 min-w-0 flex-1 flex-col">
-                <div className="group relative flex min-h-0 min-w-0 flex-1">
+                <m.div
+                  className="group relative flex min-h-0 min-w-0 flex-1"
+                  animate={{ opacity: isViewerContentVisible ? 1 : 0 }}
+                  transition={Spring.presets.snappy}
+                >
                   {/* 顶部工具栏 */}
                   <m.div
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    animate={{ opacity: isViewerContentVisible ? 1 : 0 }}
                     exit={{ opacity: 0 }}
                     transition={Spring.presets.snappy}
                     className={`pointer-events-none absolute ${isMobile ? 'top-2 right-2 left-2' : 'top-4 right-4 left-4'} z-30 flex items-center justify-between`}
@@ -244,6 +281,14 @@ export const PhotoViewer = ({
                     <ReactionButton
                       photoId={currentPhoto.id}
                       className="absolute right-4 bottom-4"
+                      style={{
+                        opacity: isViewerContentVisible ? 1 : 0,
+                        transition: 'opacity 180ms ease',
+                        pointerEvents:
+                          !isViewerContentVisible || isEntryAnimating
+                            ? 'none'
+                            : 'auto',
+                      }}
                     />
                   )}
 
@@ -273,6 +318,8 @@ export const PhotoViewer = ({
                   >
                     {photos.map((photo, index) => {
                       const isCurrentImage = index === currentIndex
+                      const hideCurrentImage =
+                        isEntryAnimating && isCurrentImage
                       return (
                         <SwiperSlide
                           key={photo.id}
@@ -285,6 +332,11 @@ export const PhotoViewer = ({
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={Spring.presets.smooth}
                             className="relative flex h-full w-full items-center justify-center"
+                            style={{
+                              visibility: hideCurrentImage
+                                ? 'hidden'
+                                : 'visible',
+                            }}
                           >
                             <ProgressiveImage
                               loadingIndicatorRef={loadingIndicatorRef}
@@ -305,6 +357,9 @@ export const PhotoViewer = ({
                                   : true
                               }
                               enableZoom={true}
+                              shouldRenderHighRes={
+                                isViewerContentVisible && isOpen
+                              }
                               onZoomChange={
                                 isCurrentImage ? handleZoomChange : undefined
                               }
@@ -349,13 +404,14 @@ export const PhotoViewer = ({
                       )}
                     </Fragment>
                   )}
-                </div>
+                </m.div>
 
                 <Suspense>
                   <GalleryThumbnail
                     currentIndex={currentIndex}
                     photos={photos}
                     onIndexChange={onIndexChange}
+                    visible={isViewerContentVisible}
                   />
                 </Suspense>
               </div>
@@ -368,6 +424,7 @@ export const PhotoViewer = ({
                     <ExifPanel
                       currentPhoto={currentPhoto}
                       exifData={currentPhoto.exif}
+                      visible={isViewerContentVisible}
                       onClose={
                         isMobile ? () => setShowExifPanel(false) : undefined
                       }
@@ -376,9 +433,23 @@ export const PhotoViewer = ({
                 </AnimatePresenceOnlyMobile>
               </Suspense>
             </div>
-          </div>
+          </m.div>
         )}
       </AnimatePresence>
+      {entryTransition && (
+        <PhotoViewerTransitionPreview
+          key={`${entryTransition.variant}-${entryTransition.photoId}`}
+          transition={entryTransition}
+          onComplete={handleEntryAnimationComplete}
+        />
+      )}
+      {exitTransition && (
+        <PhotoViewerTransitionPreview
+          key={`${exitTransition.variant}-${exitTransition.photoId}`}
+          transition={exitTransition}
+          onComplete={handleExitAnimationComplete}
+        />
+      )}
     </>
   )
 }

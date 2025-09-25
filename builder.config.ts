@@ -93,6 +93,17 @@ export const defaultBuilderConfig: BuilderConfig = {
     customDomain: env.S3_CUSTOM_DOMAIN,
     excludeRegex: env.S3_EXCLUDE_REGEX,
     maxFileLimit: 1000,
+    // Network tuning defaults
+    keepAlive: true,
+    maxSockets: 64,
+    connectionTimeoutMs: 5_000,
+    socketTimeoutMs: 30_000,
+    requestTimeoutMs: 20_000,
+    idleTimeoutMs: 10_000,
+    totalTimeoutMs: 60_000,
+    retryMode: 'standard',
+    maxAttempts: 3,
+    downloadConcurrency: 16,
   },
 
   options: {

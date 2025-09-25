@@ -29,7 +29,8 @@ export const GalleryThumbnail: FC<{
   currentIndex: number
   photos: PhotoManifest[]
   onIndexChange: (index: number) => void
-}> = ({ currentIndex, photos, onIndexChange }) => {
+  visible?: boolean
+}> = ({ currentIndex, photos, onIndexChange, visible = true }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const isMobile = useMobile()
@@ -100,10 +101,14 @@ export const GalleryThumbnail: FC<{
   return (
     <m.div
       className="bg-material-medium pb-safe z-10 shrink-0"
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      exit={{ y: 100 }}
+      initial={{ y: 100, opacity: 0 }}
+      animate={{
+        y: visible ? 0 : 48,
+        opacity: visible ? 1 : 0,
+      }}
+      exit={{ y: 100, opacity: 0 }}
       transition={Spring.presets.smooth}
+      style={{ pointerEvents: visible ? 'auto' : 'none' }}
     >
       <div
         ref={scrollContainerRef}

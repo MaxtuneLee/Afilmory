@@ -21,6 +21,7 @@ export default defineConfig(
       },
     },
     rules: {
+      '@typescript-eslint/triple-slash-reference': 0,
       'unicorn/prefer-math-trunc': 'off',
       'unicorn/no-static-only-class': 'off',
       '@eslint-react/no-clone-element': 0,
@@ -30,6 +31,24 @@ export default defineConfig(
       // NOTE: Disable this temporarily
       'react-compiler/react-compiler': 0,
       'no-restricted-syntax': 0,
+
+      // disable react compiler rules for now
+      'react-hooks/no-unused-directives': 'off',
+      'react-hooks/static-components': 'off',
+      'react-hooks/use-memo': 'off',
+      'react-hooks/component-hook-factories': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/globals': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/error-boundaries': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/set-state-in-render': 'off',
+      'react-hooks/unsupported-syntax': 'off',
+      'react-hooks/config': 'off',
+      'react-hooks/gating': 'off',
+
       'no-restricted-globals': [
         'error',
         {

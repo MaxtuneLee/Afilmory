@@ -1,4 +1,3 @@
-import path from 'node:path'
 
 import { thumbnailExists } from '../image/thumbnail.js'
 import type { PhotoManifestItem } from '../types/photo.js'
@@ -19,13 +18,11 @@ export interface CacheableData {
  * 考虑文件更新状态和缓存存在性
  */
 export async function shouldProcessPhoto(
-  photoKey: string,
+  photoId: string,
   existingItem: PhotoManifestItem | undefined,
   obj: { LastModified?: Date; ETag?: string },
   options: PhotoProcessorOptions,
 ): Promise<{ shouldProcess: boolean; reason: string }> {
-  const photoId = path.basename(photoKey, path.extname(photoKey))
-
   // 强制模式下总是处理
   if (options.isForceMode) {
     return { shouldProcess: true, reason: '强制模式' }

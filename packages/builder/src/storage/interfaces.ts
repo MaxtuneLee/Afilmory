@@ -69,6 +69,18 @@ export type S3Config = {
   customDomain?: string
   excludeRegex?: string
   maxFileLimit?: number
+  // Network tuning (optional)
+  keepAlive?: boolean
+  maxSockets?: number
+  connectionTimeoutMs?: number
+  socketTimeoutMs?: number
+  requestTimeoutMs?: number
+  idleTimeoutMs?: number
+  totalTimeoutMs?: number
+  retryMode?: 'standard' | 'adaptive' | 'legacy'
+  maxAttempts?: number
+  // Download concurrency limiter within a single process/worker
+  downloadConcurrency?: number
 }
 
 export type GitHubConfig = {
