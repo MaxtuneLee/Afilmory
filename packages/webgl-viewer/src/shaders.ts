@@ -31,10 +31,16 @@ export const FRAGMENT_SHADER_SOURCE = `
   precision mediump float;
   
   uniform sampler2D u_image;
+  uniform int u_renderMode;
+  uniform vec4 u_solidColor;
   varying vec2 v_texCoord;
   
   void main() {
-    gl_FragColor = texture2D(u_image, v_texCoord);
+    if (u_renderMode == 0) {
+      gl_FragColor = texture2D(u_image, v_texCoord);
+    } else {
+      gl_FragColor = u_solidColor;
+    }
   }
 `
 

@@ -5,7 +5,14 @@
  */
 
 import * as React from 'react'
-import { useEffect, useImperativeHandle, useMemo, useRef } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import {
   defaultAlignmentAnimation,
@@ -51,6 +58,7 @@ export const WebGLImageViewer = ({
   }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewerRef = useRef<WebGLImageViewerEngine | null>(null)
+  const [tileOutlineEnabled, setTileOutlineEnabled] = useState(false)
 
   const setDebugInfo = useRef((() => {}) as (debugInfo: any) => void)
 
@@ -131,14 +139,24 @@ export const WebGLImageViewer = ({
         .loadImage(src, preknownWidth, preknownHeight)
         .catch(console.error)
       viewerRef.current = webGLImageViewerEngine
+      setTileOutlineEnabled(webGLImageViewerEngine.isTileOutlineEnabled())
     } catch (error) {
       console.error('Failed to initialize WebGL Image Viewer:', error)
     }
 
     return () => {
       webGLImageViewerEngine?.destroy()
+      viewerRef.current = null
     }
   }, [src, config, debug])
+
+  const handleOutlineToggle = useCallback(
+    (enabled: boolean) => {
+      setTileOutlineEnabled(enabled)
+      viewerRef.current?.setTileOutlineEnabled(enabled)
+    },
+    [setTileOutlineEnabled],
+  )
 
   return (
     <div
@@ -168,6 +186,8 @@ export const WebGLImageViewer = ({
       />
       {debug && (
         <DebugInfoComponent
+          outlineEnabled={tileOutlineEnabled}
+          onToggleOutline={handleOutlineToggle}
           ref={(e) => {
             if (e) {
               setDebugInfo.current = e.updateDebugInfo
