@@ -13,6 +13,7 @@ export interface LoadingState {
   loadedBytes?: number
   totalBytes?: number
   isConverting?: boolean
+  isQueueWaiting?: boolean
   conversionMessage?: string
   codecInfo?: string
 }

@@ -26,7 +26,14 @@ export const Component = () => {
   return (
     <RootPortal>
       <RootPortalProvider value={rootPortalValue}>
-        <RemoveScroll ref={ref} className="fixed inset-0 z-[9999]">
+        <RemoveScroll
+          ref={ref}
+          className={
+            photoViewer.isOpen
+              ? 'fixed inset-0 z-[9999]'
+              : 'pointer-events-none fixed inset-0 z-40'
+          }
+        >
           <PhotoViewer
             photos={photos}
             currentIndex={photoViewer.currentIndex}

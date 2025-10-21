@@ -1,13 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 
-import type { PhotoManifestItem } from '@afilmory/builder'
+import type { PhotoManifestItem, PickedExif } from '@afilmory/builder'
 import type { Plugin } from 'vite'
 
 import type { SiteConfig } from '../../../../site.config'
 import { MANIFEST_PATH } from './__internal__/constants'
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 export function createFeedSitemapPlugin(siteConfig: SiteConfig): Plugin {
   return {
@@ -64,10 +61,7 @@ function generateRSSFeed(
     ? new Date(latestPhoto.dateTaken).toUTCString()
     : now
 
-  // Take latest 20 photos for RSS feed
-  const recentPhotos = photos.slice(0, 20)
-
-  const rssItems = recentPhotos
+  const rssItems = photos
     .map((photo) => {
       const photoUrl = `${config.url}/${photo.id}`
       const pubDate = new Date(photo.dateTaken).toUTCString()
@@ -133,272 +127,391 @@ ${rssItems}
 </rss>`
 }
 
-function generateExifTags(exif: any, photo: PhotoManifestItem): string {
+function generateExifTags(
+  exif: PickedExif | null | undefined,
+  photo: PhotoManifestItem,
+): string {
   if (!exif) {
     return ''
   }
 
   const tags: string[] = []
 
-  // === 基础相机设置参数 (basic) ===
-
-  // Aperture (光圈)
-  if (exif.Photo?.FNumber) {
-    tags.push(`      <exif:aperture>f/${exif.Photo.FNumber}</exif:aperture>`)
+  const aperture = isFiniteNumber(exif.FNumber)
+    ? `f/${formatDecimal(exif.FNumber)}`
+    : null
+  if (aperture) {
+    tags.push(`      <exif:aperture>${aperture}</exif:aperture>`)
   }
 
-  // Shutter Speed (快门)
-  if (exif.Photo?.ExposureTime) {
-    const shutterSpeed =
-      exif.Photo.ExposureTime >= 1
-        ? `${exif.Photo.ExposureTime}s`
-        : `1/${Math.round(1 / exif.Photo.ExposureTime)}s`
+  const shutterSpeed = formatShutterSpeed(exif)
+  if (shutterSpeed) {
     tags.push(`      <exif:shutterSpeed>${shutterSpeed}</exif:shutterSpeed>`)
   }
 
-  // ISO
-  if (exif.Photo?.ISOSpeedRatings) {
-    tags.push(`      <exif:iso>${exif.Photo.ISOSpeedRatings}</exif:iso>`)
+  const iso = getISOValue(exif)
+  if (iso !== null) {
+    tags.push(`      <exif:iso>${iso}</exif:iso>`)
   }
 
-  // Exposure Compensation (曝光补偿)
-  if (exif.Photo?.ExposureBiasValue !== undefined) {
-    const ev = exif.Photo.ExposureBiasValue
-    const evString = ev > 0 ? `+${ev}` : `${ev}`
+  const exposureCompensation = getExposureCompensation(exif)
+  if (exposureCompensation) {
     tags.push(
-      `      <exif:exposureCompensation>${evString} EV</exif:exposureCompensation>`,
+      `      <exif:exposureCompensation>${exposureCompensation}</exif:exposureCompensation>`,
     )
   }
 
-  // === 图像属性 (basic) ===
-
-  // Image Dimensions (图片宽度，高度)
   tags.push(
     `      <exif:imageWidth>${photo.width}</exif:imageWidth>`,
     `      <exif:imageHeight>${photo.height}</exif:imageHeight>`,
   )
 
-  // Date Taken (拍摄时间) - 转换为 ISO 8601 格式
-  if (exif.Photo?.DateTimeOriginal) {
-    try {
-      // 尝试解析 EXIF 日期格式 (YYYY:MM:DD HH:mm:ss)
-      const exifDate = exif.Photo.DateTimeOriginal.replaceAll(':', '-').replace(
-        /-(\d{2}:\d{2}:\d{2})/,
-        ' $1',
-      )
-      const isoDate = new Date(exifDate).toISOString()
-      tags.push(`      <exif:dateTaken>${isoDate}</exif:dateTaken>`)
-    } catch {
-      // 如果解析失败，使用 photo.dateTaken
-      const isoDate = new Date(photo.dateTaken).toISOString()
-      tags.push(`      <exif:dateTaken>${isoDate}</exif:dateTaken>`)
-    }
-  } else {
-    const isoDate = new Date(photo.dateTaken).toISOString()
-    tags.push(`      <exif:dateTaken>${isoDate}</exif:dateTaken>`)
+  const dateTaken = formatDateTaken(exif, photo)
+  if (dateTaken) {
+    tags.push(`      <exif:dateTaken>${dateTaken}</exif:dateTaken>`)
   }
 
-  // Camera Model (机型)
-  if (exif.Image?.Make && exif.Image?.Model) {
+  if (exif.Make && exif.Model) {
     tags.push(
-      `      <exif:camera><![CDATA[${exif.Image.Make} ${exif.Image.Model}]]></exif:camera>`,
+      `      <exif:camera><![CDATA[${exif.Make} ${exif.Model}]]></exif:camera>`,
     )
   }
 
-  // Orientation (图像方向)
-  if (exif.Image?.Orientation) {
+  if (exif.Orientation !== undefined && exif.Orientation !== null) {
+    tags.push(`      <exif:orientation>${exif.Orientation}</exif:orientation>`)
+  }
+
+  if (exif.LensModel) {
+    tags.push(`      <exif:lens><![CDATA[${exif.LensModel}]]></exif:lens>`)
+  }
+
+  const focalLength = formatFocalLength(exif.FocalLength)
+  if (focalLength) {
+    tags.push(`      <exif:focalLength>${focalLength}</exif:focalLength>`)
+  }
+
+  const focalLength35mm = formatFocalLength(exif.FocalLengthIn35mmFormat)
+  if (focalLength35mm) {
     tags.push(
-      `      <exif:orientation>${exif.Image.Orientation}</exif:orientation>`,
+      `      <exif:focalLength35mm>${focalLength35mm}</exif:focalLength35mm>`,
     )
   }
 
-  // === 镜头参数 (lens) ===
-
-  // Lens Model (镜头)
-  if (exif.Photo?.LensModel) {
+  if (isFiniteNumber(exif.MaxApertureValue)) {
+    const maxAperture = Math.pow(2, exif.MaxApertureValue / 2)
     tags.push(
-      `      <exif:lens><![CDATA[${exif.Photo.LensModel}]]></exif:lens>`,
+      `      <exif:maxAperture>f/${formatDecimal(maxAperture)}</exif:maxAperture>`,
     )
   }
 
-  // Focal Length (焦段)
-  if (exif.Photo?.FocalLength) {
+  const latitude = normalizeCoordinate(exif.GPSLatitude, exif.GPSLatitudeRef)
+  const longitude = normalizeCoordinate(exif.GPSLongitude, exif.GPSLongitudeRef)
+  if (latitude !== null && longitude !== null) {
     tags.push(
-      `      <exif:focalLength>${exif.Photo.FocalLength}mm</exif:focalLength>`,
+      `      <exif:gpsLatitude>${latitude}</exif:gpsLatitude>`,
+      `      <exif:gpsLongitude>${longitude}</exif:gpsLongitude>`,
     )
   }
 
-  // Focal Length in 35mm equivalent (等效 35mm 焦距)
-  if (exif.Photo?.FocalLengthIn35mmFilm) {
-    tags.push(
-      `      <exif:focalLength35mm>${exif.Photo.FocalLengthIn35mmFilm}mm</exif:focalLength35mm>`,
-    )
-  }
-
-  // Max Aperture (镜头最大光圈)
-  if (exif.Photo?.MaxApertureValue) {
-    const maxAperture = Math.pow(2, exif.Photo.MaxApertureValue / 2)
-    tags.push(
-      `      <exif:maxAperture>f/${maxAperture.toFixed(1)}</exif:maxAperture>`,
-    )
-  }
-
-  // === 位置信息 (location) ===
-
-  // GPS Coordinates
-  if (exif.GPS?.GPSLatitude && exif.GPS?.GPSLongitude) {
-    const lat = convertDMSToDD(exif.GPS.GPSLatitude, exif.GPS.GPSLatitudeRef)
-    const lng = convertDMSToDD(exif.GPS.GPSLongitude, exif.GPS.GPSLongitudeRef)
-    if (lat !== null && lng !== null) {
-      tags.push(
-        `      <exif:gpsLatitude>${lat}</exif:gpsLatitude>`,
-        `      <exif:gpsLongitude>${lng}</exif:gpsLongitude>`,
-      )
-    }
-  }
-
-  // Altitude (海拔)
-  if (exif.GPS?.GPSAltitude) {
+  if (isFiniteNumber(exif.GPSAltitude)) {
     const altitude =
-      exif.GPS.GPSAltitudeRef === 1
-        ? -exif.GPS.GPSAltitude
-        : exif.GPS.GPSAltitude
-    tags.push(`      <exif:altitude>${altitude}m</exif:altitude>`)
+      exif.GPSAltitudeRef && isBelowSeaLevel(exif.GPSAltitudeRef)
+        ? -Math.abs(exif.GPSAltitude)
+        : Math.abs(exif.GPSAltitude)
+    tags.push(
+      `      <exif:altitude>${formatDecimal(altitude, 2)}m</exif:altitude>`,
+    )
   }
 
-  // === 技术参数 (technical) ===
-
-  // White Balance (白平衡)
-  if (exif.Photo?.WhiteBalance !== undefined) {
-    const whiteBalanceMap = { 0: 'Auto', 1: 'Manual' }
-    const wb =
-      whiteBalanceMap[
-        exif.Photo.WhiteBalance as keyof typeof whiteBalanceMap
-      ] || 'Auto'
-    tags.push(`      <exif:whiteBalance>${wb}</exif:whiteBalance>`)
+  const whiteBalance = normalizeStringValue(exif.WhiteBalance)
+  if (whiteBalance) {
+    tags.push(`      <exif:whiteBalance>${whiteBalance}</exif:whiteBalance>`)
   }
 
-  // Metering Mode (测光模式)
-  if (exif.Photo?.MeteringMode !== undefined) {
-    const meteringModeMap = {
-      0: 'Unknown',
-      1: 'Average',
-      2: 'Center-weighted',
-      3: 'Spot',
-      4: 'Multi-spot',
-      5: 'Pattern',
-      6: 'Partial',
-    }
-    const mode =
-      meteringModeMap[exif.Photo.MeteringMode as keyof typeof meteringModeMap]
-    if (mode && mode !== 'Unknown') {
-      tags.push(`      <exif:meteringMode>${mode}</exif:meteringMode>`)
-    }
+  const meteringMode = normalizeStringValue(exif.MeteringMode)
+  if (meteringMode) {
+    tags.push(`      <exif:meteringMode>${meteringMode}</exif:meteringMode>`)
   }
 
-  // Flash Mode (闪光灯模式)
-  if (exif.Photo?.Flash !== undefined) {
-    const flashFired = (exif.Photo.Flash & 0x01) !== 0
-    const flashMode = flashFired ? 'On' : 'Off'
+  const flashMode = formatFlashMode(exif.Flash)
+  if (flashMode) {
     tags.push(`      <exif:flashMode>${flashMode}</exif:flashMode>`)
   }
 
-  // Color Space (色彩空间)
-  if (exif.Photo?.ColorSpace !== undefined) {
-    const colorSpaceMap = { 1: 'sRGB', 65535: 'Uncalibrated' }
-    const colorSpace =
-      colorSpaceMap[exif.Photo.ColorSpace as keyof typeof colorSpaceMap] ||
-      'sRGB'
+  const colorSpace = normalizeStringValue(exif.ColorSpace)
+  if (colorSpace) {
     tags.push(`      <exif:colorSpace>${colorSpace}</exif:colorSpace>`)
   }
 
-  // === 高级参数 (advanced) ===
-
-  // Exposure Program (曝光程序)
-  if (exif.Photo?.ExposureProgram !== undefined) {
-    const exposureProgramMap = {
-      0: 'Not defined',
-      1: 'Manual',
-      2: 'Program',
-      3: 'Aperture Priority',
-      4: 'Shutter Priority',
-      5: 'Creative',
-      6: 'Action',
-      7: 'Portrait',
-      8: 'Landscape',
-    }
-    const program =
-      exposureProgramMap[
-        exif.Photo.ExposureProgram as keyof typeof exposureProgramMap
-      ]
-    if (program && program !== 'Not defined') {
-      tags.push(`      <exif:exposureProgram>${program}</exif:exposureProgram>`)
-    }
+  const exposureProgram = normalizeStringValue(exif.ExposureProgram)
+  if (exposureProgram) {
+    tags.push(
+      `      <exif:exposureProgram>${exposureProgram}</exif:exposureProgram>`,
+    )
   }
 
-  // Scene Mode (场景模式)
-  if (exif.Photo?.SceneCaptureType !== undefined) {
-    const sceneModeMap = {
-      0: 'Standard',
-      1: 'Landscape',
-      2: 'Portrait',
-      3: 'Night',
-    }
-    const scene =
-      sceneModeMap[exif.Photo.SceneCaptureType as keyof typeof sceneModeMap]
-    if (scene) {
-      tags.push(`      <exif:sceneMode><![CDATA[${scene}]]></exif:sceneMode>`)
-    }
+  const sceneMode = normalizeStringValue(exif.SceneCaptureType)
+  if (sceneMode) {
+    tags.push(`      <exif:sceneMode><![CDATA[${sceneMode}]]></exif:sceneMode>`)
   }
 
-  // Contrast (对比度)
-  if (exif.Photo?.Contrast !== undefined) {
-    const contrastMap = { 0: 'Normal', 1: 'Low', 2: 'High' }
-    const contrast =
-      contrastMap[exif.Photo.Contrast as keyof typeof contrastMap]
-    if (contrast) {
-      tags.push(`      <exif:contrast>${contrast}</exif:contrast>`)
-    }
+  const brightness = toNumber(exif.BrightnessValue)
+  if (brightness !== null) {
+    tags.push(
+      `      <exif:brightness>${formatDecimal(brightness, 2)} EV</exif:brightness>`,
+    )
   }
 
-  // Saturation (饱和度)
-  if (exif.Photo?.Saturation !== undefined) {
-    const saturationMap = { 0: 'Normal', 1: 'Low', 2: 'High' }
-    const saturation =
-      saturationMap[exif.Photo.Saturation as keyof typeof saturationMap]
-    if (saturation) {
-      tags.push(`      <exif:saturation>${saturation}</exif:saturation>`)
-    }
-  }
-
-  // Sharpness (锐度)
-  if (exif.Photo?.Sharpness !== undefined) {
-    const sharpnessMap = { 0: 'Normal', 1: 'Soft', 2: 'Hard' }
-    const sharpness =
-      sharpnessMap[exif.Photo.Sharpness as keyof typeof sharpnessMap]
-    if (sharpness) {
-      tags.push(`      <exif:sharpness>${sharpness}</exif:sharpness>`)
-    }
+  const lightValue = toNumber(exif.LightValue)
+  if (lightValue !== null) {
+    tags.push(
+      `      <exif:lightValue>${formatDecimal(lightValue, 2)}</exif:lightValue>`,
+    )
   }
 
   return tags.join('\n')
 }
 
-// Helper function to convert DMS (Degrees, Minutes, Seconds) to DD (Decimal Degrees)
-function convertDMSToDD(dms: number[], ref: string): number | null {
-  if (!dms || dms.length !== 3) return null
+function formatDateTaken(
+  exif: PickedExif,
+  photo: PhotoManifestItem,
+): string | null {
+  const rawDate = exif.DateTimeOriginal
+  if (rawDate) {
+    try {
+      return new Date(rawDate).toISOString()
+    } catch {
+      // fallthrough to photo date
+    }
+  }
+  return new Date(photo.dateTaken).toISOString()
+}
 
-  const degrees = dms[0]
-  const minutes = dms[1]
-  const seconds = dms[2]
-
-  let dd = degrees + minutes / 60 + seconds / 3600
-
-  if (ref === 'S' || ref === 'W') {
-    dd = dd * -1
+function formatShutterSpeed(exif: PickedExif): string | null {
+  const raw = exif.ExposureTime ?? exif.ShutterSpeed ?? exif.ShutterSpeedValue
+  if (raw === null || raw === undefined) {
+    return null
   }
 
-  return Math.round(dd * 1000000) / 1000000 // 保留 6 位小数
+  if (typeof raw === 'number') {
+    if (!Number.isFinite(raw)) {
+      return null
+    }
+    return raw >= 1
+      ? `${stripTrailingZeros(raw)}s`
+      : `1/${Math.round(1 / raw)}s`
+  }
+
+  const value = raw.toString().trim()
+  if (!value) {
+    return null
+  }
+
+  if (value.endsWith('s')) {
+    return value
+  }
+
+  return `${value}s`
+}
+
+function getISOValue(exif: PickedExif): number | null {
+  if (isFiniteNumber(exif.ISO)) {
+    return Math.round(exif.ISO)
+  }
+
+  const isoFromExif = (exif as unknown as Record<string, unknown>)
+    .ISOSpeedRatings
+  const iso = toNumber(isoFromExif)
+  return iso !== null ? Math.round(iso) : null
+}
+
+function getExposureCompensation(exif: PickedExif): string | null {
+  const value = toNumber(
+    exif.ExposureCompensation ??
+      (exif as unknown as Record<string, unknown>).ExposureBiasValue,
+  )
+  if (value === null) {
+    return null
+  }
+
+  const formatted = formatDecimal(value, 2)
+  if (value > 0 && !formatted.startsWith('+')) {
+    return `+${formatted} EV`
+  }
+  return `${formatted} EV`
+}
+
+function formatFocalLength(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  if (typeof value === 'number') {
+    return `${formatDecimal(value)}mm`
+  }
+
+  const text = value.toString().trim()
+  if (!text) {
+    return null
+  }
+
+  const match = text.match(/-?\d+(?:\.\d+)?/)
+  if (!match) {
+    return text.endsWith('mm') ? text : `${text}mm`
+  }
+
+  const numeric = Number.parseFloat(match[0])
+  if (Number.isNaN(numeric)) {
+    return text.endsWith('mm') ? text : `${text}mm`
+  }
+
+  return `${formatDecimal(numeric)}mm`
+}
+
+function normalizeCoordinate(
+  value: PickedExif['GPSLatitude'] | PickedExif['GPSLongitude'],
+  ref: PickedExif['GPSLatitudeRef'] | PickedExif['GPSLongitudeRef'],
+): number | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  if (Array.isArray(value)) {
+    return convertDMSToDD(value, ref)
+  }
+
+  if (typeof value === 'number') {
+    return applyGPSRef(value, ref)
+  }
+
+  const match = value.toString().match(/-?\d+(?:\.\d+)?/)
+  if (!match) {
+    return null
+  }
+  const numeric = Number.parseFloat(match[0])
+  if (Number.isNaN(numeric)) {
+    return null
+  }
+
+  return applyGPSRef(numeric, ref)
+}
+
+function convertDMSToDD(
+  dms: readonly number[],
+  ref: PickedExif['GPSLatitudeRef'] | PickedExif['GPSLongitudeRef'],
+): number | null {
+  if (!dms || dms.length !== 3) return null
+
+  const [degrees, minutes, seconds] = dms
+  if ([degrees, minutes, seconds].some((value) => !Number.isFinite(value))) {
+    return null
+  }
+
+  const value = degrees + minutes / 60 + seconds / 3600
+  return applyGPSRef(value, ref)
+}
+
+function applyGPSRef(
+  value: number,
+  ref: PickedExif['GPSLatitudeRef'] | PickedExif['GPSLongitudeRef'],
+): number {
+  if (!ref) {
+    return roundCoordinate(value)
+  }
+
+  const negativeTokens = ['S', 'W', 'South', 'West']
+  const shouldNegate = negativeTokens.some((token) =>
+    ref.toString().toLowerCase().includes(token.toLowerCase()),
+  )
+
+  const signed = shouldNegate ? -Math.abs(value) : Math.abs(value)
+  return roundCoordinate(signed)
+}
+
+function roundCoordinate(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000
+}
+
+function isBelowSeaLevel(ref: PickedExif['GPSAltitudeRef']): boolean {
+  if (!ref) return false
+  if (typeof ref === 'number') {
+    return ref === 1
+  }
+  const normalized = ref.toString().toLowerCase()
+  return normalized.includes('below') || normalized === '1'
+}
+
+function normalizeStringValue(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const text = value.toString().trim()
+  return text ?? null
+}
+
+function formatFlashMode(value: PickedExif['Flash']): string | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  if (typeof value === 'number') {
+    // Bit mask from EXIF spec: bit 0 indicates flash fired
+    return (value & 0x01) !== 0 ? 'On' : 'Off'
+  }
+
+  const text = value.toString().toLowerCase()
+  if (!text) {
+    return null
+  }
+
+  if (text.includes('on')) {
+    return 'On'
+  }
+  if (text.includes('off') || text.includes('no flash')) {
+    return 'Off'
+  }
+  if (text.includes('auto')) {
+    return 'Auto'
+  }
+  if (text.includes('red-eye')) {
+    return 'Red-eye'
+  }
+  return value.toString()
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+  if (typeof value === 'string') {
+    const numeric = Number.parseFloat(value)
+    return Number.isNaN(numeric) ? null : numeric
+  }
+  return null
+}
+
+function formatDecimal(value: number, fractionDigits = 1): string {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+  const fixed = value.toFixed(fractionDigits)
+  return stripTrailingZeros(Number.parseFloat(fixed))
+}
+
+function stripTrailingZeros(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+  const text = value.toString()
+  if (!text.includes('.')) {
+    return text
+  }
+  return text.replace(/\.0+$/, '').replace(/(\.\d*?[1-9])0+$/, '$1')
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
 }
 
 function generateSitemap(

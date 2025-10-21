@@ -48,7 +48,7 @@ export interface StorageProvider {
    * @param key 文件的键值/路径
    * @returns 公共访问 URL
    */
-  generatePublicUrl: (key: string) => string
+  generatePublicUrl: (key: string) => string | Promise<string>
 
   /**
    * 检测 Live Photos 配对
@@ -95,10 +95,56 @@ export type GitHubConfig = {
 
 export type LocalConfig = {
   provider: 'local'
-  basePath: string
-  baseUrl?: string
-  excludeRegex?: string
-  maxFileLimit?: number
+  basePath: string // 本地照片存储的基础路径
+  baseUrl?: string // 用于生成公共 URL 的基础 URL（可选）
+  excludeRegex?: string // 排除文件的正则表达式
+  maxFileLimit?: number // 最大文件数量限制
 }
 
-export type StorageConfig = S3Config | GitHubConfig | LocalConfig
+export type EagleRule =
+  | {
+      type: 'tag'
+      name: string
+    }
+  | {
+      type: 'folder'
+      /**
+       * Only a folder name, not the full path.
+       */
+      name: string
+      /**
+       * Defaults to `false`.
+       */
+      includeSubfolder?: boolean
+    }
+  | {
+      /**
+       * Smart folders are not yet supported.
+       */
+      type: 'smartFolder'
+    }
+
+export type EagleConfig = {
+  provider: 'eagle'
+  /**
+   * The path to the Eagle library.
+   */
+  libraryPath: string
+  /**
+   * The path where original files need to be stored.
+   * The original files will be copied to this path during the build process.
+   *
+   * Defaults to `web/public/originals/`
+   */
+  distPath?: string
+  /**
+   * The base URL to access the original files.
+   *
+   * Defaults to `/originals/`
+   */
+  baseUrl?: string
+  include?: EagleRule[]
+  exclude?: EagleRule[]
+}
+
+export type StorageConfig = S3Config | GitHubConfig | EagleConfig | LocalConfig

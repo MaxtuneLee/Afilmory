@@ -101,6 +101,18 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
   private worker: Worker | null = null
   private textureWorkerInitialized = false
 
+  // WebGL attribute/uniform缓存
+  private positionBuffer: WebGLBuffer | null = null
+  private texCoordBuffer: WebGLBuffer | null = null
+  private tileOutlineBuffer: WebGLBuffer | null = null
+  private positionLocation = -1
+  private texCoordLocation = -1
+  private matrixLocation!: WebGLUniformLocation
+  private imageLocation!: WebGLUniformLocation
+  private renderModeLocation!: WebGLUniformLocation
+  private solidColorLocation!: WebGLUniformLocation
+  private tileOutlineEnabled = false
+
   // 事件处理器绑定
   private boundHandleMouseDown: (e: MouseEvent) => void
   private boundHandleMouseMove: (e: MouseEvent) => void
@@ -116,6 +128,7 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
   private tileCache = new Map<TileKey, TileInfo>()
   private loadingTiles = new Map<TileKey, { priority: number }>()
   private pendingTileRequests: Array<{ key: TileKey; priority: number }> = []
+  private tileProcessingFrameId: number | null = null
 
   // 可视区域信息
   private currentVisibleTiles = new Set<TileKey>()
@@ -235,6 +248,38 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
 
     gl.useProgram(this.program)
 
+    this.positionLocation = gl.getAttribLocation(this.program, 'a_position')
+    this.texCoordLocation = gl.getAttribLocation(this.program, 'a_texCoord')
+
+    if (this.positionLocation === -1 || this.texCoordLocation === -1) {
+      throw new Error('Failed to get attribute locations')
+    }
+
+    const matrixLocation = gl.getUniformLocation(this.program, 'u_matrix')
+    const imageLocation = gl.getUniformLocation(this.program, 'u_image')
+    const renderModeLocation = gl.getUniformLocation(
+      this.program,
+      'u_renderMode',
+    )
+    const solidColorLocation = gl.getUniformLocation(
+      this.program,
+      'u_solidColor',
+    )
+
+    if (
+      !matrixLocation ||
+      !imageLocation ||
+      !renderModeLocation ||
+      !solidColorLocation
+    ) {
+      throw new Error('Failed to get uniform locations')
+    }
+
+    this.matrixLocation = matrixLocation
+    this.imageLocation = imageLocation
+    this.renderModeLocation = renderModeLocation
+    this.solidColorLocation = solidColorLocation
+
     // 启用混合
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -247,21 +292,79 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
 
     // 位置缓冲
     const positionBuffer = gl.createBuffer()
+    if (!positionBuffer) {
+      throw new Error('Failed to create position buffer')
+    }
+    this.positionBuffer = positionBuffer
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW)
 
-    const positionLocation = gl.getAttribLocation(this.program, 'a_position')
-    gl.enableVertexAttribArray(positionLocation)
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
-
     // 纹理坐标缓冲
     const texCoordBuffer = gl.createBuffer()
+    if (!texCoordBuffer) {
+      throw new Error('Failed to create texCoord buffer')
+    }
+    this.texCoordBuffer = texCoordBuffer
     gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW)
 
-    const texCoordLocation = gl.getAttribLocation(this.program, 'a_texCoord')
-    gl.enableVertexAttribArray(texCoordLocation)
-    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0)
+    // 绘制瓦片描边的线框缓冲
+    const outlinePositions = new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1])
+    const outlineBuffer = gl.createBuffer()
+    if (!outlineBuffer) {
+      throw new Error('Failed to create outline buffer')
+    }
+    this.tileOutlineBuffer = outlineBuffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, outlineBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, outlinePositions, gl.STATIC_DRAW)
+
+    gl.enableVertexAttribArray(this.positionLocation)
+    gl.enableVertexAttribArray(this.texCoordLocation)
+
+    this.bindQuadBuffers()
+    gl.uniform1i(this.renderModeLocation, 0)
+  }
+
+  private bindQuadBuffers() {
+    if (!this.positionBuffer || !this.texCoordBuffer) return
+
+    const { gl } = this
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer)
+    gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer)
+    gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 0, 0)
+  }
+
+  private bindOutlineBuffer() {
+    if (!this.tileOutlineBuffer) return
+
+    const { gl } = this
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.tileOutlineBuffer)
+    gl.vertexAttribPointer(this.positionLocation, 2, gl.FLOAT, false, 0, 0)
+  }
+
+  private drawTileOutlines(tileMatrices: Float32Array[]) {
+    if (
+      !this.tileOutlineEnabled ||
+      tileMatrices.length === 0 ||
+      !this.tileOutlineBuffer
+    ) {
+      return
+    }
+
+    const { gl } = this
+    gl.uniform1i(this.renderModeLocation, 1)
+    gl.uniform4f(this.solidColorLocation, 1, 0.4, 0, 0.7)
+    this.bindOutlineBuffer()
+    gl.lineWidth(1)
+
+    for (const matrix of tileMatrices) {
+      gl.uniformMatrix3fv(this.matrixLocation, false, matrix)
+      gl.drawArrays(gl.LINE_LOOP, 0, 4)
+    }
+
+    this.bindQuadBuffers()
+    gl.uniform1i(this.renderModeLocation, 0)
   }
 
   private initWorker() {
@@ -751,21 +854,33 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
 
     // 创建当前视口的哈希，用于检测视口变化
     const viewportHash = `${this.scale.toFixed(3)}-${this.translateX.toFixed(1)}-${this.translateY.toFixed(1)}`
-
-    // 如果视口没有显著变化，跳过更新
-    if (viewportHash === this.lastViewportHash) {
-      return
-    }
-
+    const viewportChanged = viewportHash !== this.lastViewportHash
     this.lastViewportHash = viewportHash
+
+    let addedNewRequest = false
 
     // 标记需要的瓦片
     for (const tile of visibleTiles) {
       const key = this.getTileKey(tile.x, tile.y, tile.lodLevel)
       newVisibleTiles.add(key)
 
-      if (!this.tileCache.has(key) && !this.loadingTiles.has(key)) {
+      const pendingRequest = this.pendingTileRequests.find(
+        (request) => request.key === key,
+      )
+
+      if (
+        !this.tileCache.has(key) &&
+        !this.loadingTiles.has(key) &&
+        !pendingRequest
+      ) {
         this.pendingTileRequests.push({ key, priority: tile.priority })
+        addedNewRequest = true
+      } else if (pendingRequest) {
+        // Update priority when tile stays in view to keep ordering useful
+        pendingRequest.priority = Math.min(
+          pendingRequest.priority,
+          tile.priority,
+        )
       } else if (this.tileCache.has(key)) {
         // 更新使用时间
         const tileInfo = this.tileCache.get(key)!
@@ -774,12 +889,15 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
     }
 
     this.currentVisibleTiles = newVisibleTiles
-
-    // 清理不再需要的瓦片
     this.cleanupOldTiles()
 
-    // 处理待加载的瓦片请求
-    this.processPendingTileRequests()
+    if (
+      viewportChanged ||
+      addedNewRequest ||
+      this.pendingTileRequests.length > 0
+    ) {
+      this.processPendingTileRequests()
+    }
   }
 
   private cleanupOldTiles(): void {
@@ -816,19 +934,27 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
   }
 
   private processPendingTileRequests(): void {
-    if (
-      this.pendingTileRequests.length === 0 ||
-      !this.worker ||
-      !this.textureWorkerInitialized
-    ) {
+    if (!this.worker || !this.textureWorkerInitialized) {
+      return
+    }
+
+    if (this.pendingTileRequests.length === 0) {
+      if (this.tileProcessingFrameId !== null) {
+        cancelAnimationFrame(this.tileProcessingFrameId)
+        this.tileProcessingFrameId = null
+      }
       return
     }
 
     // 按优先级排序
     this.pendingTileRequests.sort((a, b) => a.priority - b.priority)
 
-    // 限制并发加载数量
-    const batch = this.pendingTileRequests.splice(0, MAX_TILES_PER_FRAME)
+    const halfCount = Math.max(
+      1,
+      Math.ceil(this.pendingTileRequests.length / 2),
+    )
+    const batchSize = Math.min(MAX_TILES_PER_FRAME, halfCount)
+    const batch = this.pendingTileRequests.splice(0, batchSize)
 
     for (const request of batch) {
       const { key, priority } = request
@@ -855,24 +981,37 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
         },
       })
     }
+
+    if (
+      this.pendingTileRequests.length > 0 &&
+      this.tileProcessingFrameId === null
+    ) {
+      this.tileProcessingFrameId = requestAnimationFrame(() => {
+        this.tileProcessingFrameId = null
+        this.processPendingTileRequests()
+      })
+    }
   }
 
   // 修改渲染方法以支持瓦片渲染
   private render() {
     const { gl } = this
 
+    if (!this.positionBuffer || !this.texCoordBuffer) {
+      return
+    }
+
     gl.viewport(0, 0, this.canvas.width, this.canvas.height)
     gl.clearColor(0, 0, 0, 0)
     gl.clear(gl.COLOR_BUFFER_BIT)
     gl.useProgram(this.program)
-
-    const matrixLocation = gl.getUniformLocation(this.program, 'u_matrix')
-    const imageLocation = gl.getUniformLocation(this.program, 'u_image')
+    this.bindQuadBuffers()
+    gl.uniform1i(this.renderModeLocation, 0)
 
     // 始终渲染一个低分辨率的底图作为回退，防止瓦片加载过程中出现空白
     if (this.texture) {
-      gl.uniformMatrix3fv(matrixLocation, false, this.createMatrix())
-      gl.uniform1i(imageLocation, 0)
+      gl.uniformMatrix3fv(this.matrixLocation, false, this.createMatrix())
+      gl.uniform1i(this.imageLocation, 0)
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, this.texture)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
@@ -880,6 +1019,7 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
 
     // 渲染可见的瓦片
     const lodLevel = this.selectOptimalLOD()
+    const outlinedTileMatrices: Float32Array[] = []
 
     for (const tileKey of this.currentVisibleTiles) {
       const tileInfo = this.tileCache.get(tileKey)
@@ -893,13 +1033,18 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
         tileInfo.y,
         tileInfo.lodLevel,
       )
-      gl.uniformMatrix3fv(matrixLocation, false, tileMatrix)
+      gl.uniformMatrix3fv(this.matrixLocation, false, tileMatrix)
 
-      gl.uniform1i(imageLocation, 0)
+      gl.uniform1i(this.imageLocation, 0)
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, tileInfo.texture)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
+      if (this.tileOutlineEnabled) {
+        outlinedTileMatrices.push(tileMatrix)
+      }
     }
+
+    this.drawTileOutlines(outlinedTileMatrices)
 
     // 更新调试信息
     this.updateDebugInfo()
@@ -1006,6 +1151,15 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
     return this.scale
   }
 
+  public setTileOutlineEnabled(enabled: boolean) {
+    this.tileOutlineEnabled = enabled
+    this.render()
+  }
+
+  public isTileOutlineEnabled(): boolean {
+    return this.tileOutlineEnabled
+  }
+
   public destroy() {
     // 清理事件监听器
     window.removeEventListener('resize', this.boundResizeCanvas)
@@ -1023,11 +1177,28 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
     if (this.texture) {
       this.gl.deleteTexture(this.texture)
     }
+    if (this.positionBuffer) {
+      this.gl.deleteBuffer(this.positionBuffer)
+      this.positionBuffer = null
+    }
+    if (this.texCoordBuffer) {
+      this.gl.deleteBuffer(this.texCoordBuffer)
+      this.texCoordBuffer = null
+    }
+    if (this.tileOutlineBuffer) {
+      this.gl.deleteBuffer(this.tileOutlineBuffer)
+      this.tileOutlineBuffer = null
+    }
     if (this.program) {
       this.gl.deleteProgram(this.program)
     }
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
+    }
+
+    if (this.tileProcessingFrameId !== null) {
+      cancelAnimationFrame(this.tileProcessingFrameId)
+      this.tileProcessingFrameId = null
     }
 
     this.worker?.terminate()
@@ -1088,6 +1259,7 @@ export class WebGLImageViewerEngine extends ImageViewerEngineBase {
         maxConcurrentLODs: 3,
         onDemandStrategy: true,
       },
+      tileOutlinesEnabled: this.tileOutlineEnabled,
       tileSystem: tileSystemInfo,
     })
   }

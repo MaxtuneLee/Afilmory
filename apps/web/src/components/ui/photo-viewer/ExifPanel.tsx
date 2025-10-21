@@ -416,12 +416,12 @@ export const ExifPanel: FC<{
                         value={formattedExifData.wbShiftGM}
                       />
                     )}
-                    {!isNil(formattedExifData.whiteBalanceFineTune) && (
+                    {/* {!isNil(formattedExifData.whiteBalanceFineTune) && (
                       <Row
                         label={t('exif.white.balance.fine.tune')}
                         value={formattedExifData.whiteBalanceFineTune}
                       />
-                    )}
+                    )} */}
 
                     {!isNil(formattedExifData.flash) && (
                       <Row

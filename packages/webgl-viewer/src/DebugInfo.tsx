@@ -24,6 +24,8 @@ export interface DebugInfoRef {
 interface DebugInfoProps {
   /** 组件引用 */
   ref: React.Ref<DebugInfoRef>
+  outlineEnabled?: boolean
+  onToggleOutline?: (value: boolean) => void
 }
 
 /**
@@ -98,7 +100,11 @@ const StatusIndicator: React.FC<{ color: string; label: string }> = ({
  * @param props 组件属性
  * @returns JSX 元素
  */
-const DebugInfoComponent = ({ ref }: DebugInfoProps) => {
+const DebugInfoComponent = ({
+  ref,
+  outlineEnabled,
+  onToggleOutline,
+}: DebugInfoProps) => {
   // 调试信息状态，包含所有需要显示的调试数据
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null)
 
@@ -198,6 +204,11 @@ const DebugInfoComponent = ({ ref }: DebugInfoProps) => {
 
   if (!debugInfo) return null
 
+  const currentOutlineEnabled =
+    outlineEnabled !== undefined
+      ? outlineEnabled
+      : (debugInfo.tileOutlinesEnabled ?? false)
+
   return (
     <div
       style={{
@@ -255,6 +266,30 @@ const DebugInfoComponent = ({ ref }: DebugInfoProps) => {
 
       {!collapsed && (
         <>
+          {onToggleOutline && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Tile Outline:</span>
+                <button
+                  type="button"
+                  style={{
+                    background: currentOutlineEnabled
+                      ? 'rgba(34, 197, 94, 0.25)'
+                      : 'rgba(148, 163, 184, 0.25)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '10px',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                  }}
+                  onClick={() => onToggleOutline(!currentOutlineEnabled)}
+                >
+                  {currentOutlineEnabled ? 'On' : 'Off'}
+                </button>
+              </div>
+            </div>
+          )}
           {/* 核心状态信息 - 始终显示 */}
           <div style={{ marginBottom: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>

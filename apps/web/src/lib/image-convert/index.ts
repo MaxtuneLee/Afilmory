@@ -2,7 +2,12 @@
  * 图像转换策略模式实现
  * 支持多种浏览器原生不支持的图片格式转换
  */
+import { i18nAtom } from '~/i18n'
+import { jotaiStore } from '~/lib/jotai'
+
 import type { LoadingCallbacks } from '../image-loader-manager'
+import type { PipelineOptions } from './pipeline'
+import { ImageConversionPipeline } from './pipeline'
 import { HeicConverterStrategy } from './strategies/heic'
 import { TiffConverterStrategy } from './strategies/tiff'
 import type { ConversionResult, ImageConverterStrategy } from './type'
@@ -10,8 +15,16 @@ import type { ConversionResult, ImageConverterStrategy } from './type'
 // 图像转换策略管理器
 export class ImageConverterManager {
   private strategies = new Map<string, ImageConverterStrategy>()
+  private readonly conversionPipeline: ImageConversionPipeline
+  private readonly pendingConversions = new Map<
+    string,
+    Promise<ConversionResult>
+  >()
 
-  constructor() {
+  constructor(options: PipelineOptions = {}) {
+    this.conversionPipeline = new ImageConversionPipeline({
+      maxConcurrent: options.maxConcurrent ?? 2,
+    })
     // 注册默认策略
     this.registerStrategy(new HeicConverterStrategy())
     this.registerStrategy(new TiffConverterStrategy())
@@ -120,7 +133,44 @@ export class ImageConverterManager {
     }
 
     console.info(`Converting image using ${strategy.getName()} strategy`)
-    return await strategy.convert(blob, originalUrl, callbacks)
+    const taskKey = this.getConversionTaskKey(strategy, originalUrl)
+
+    const onLoadingStateUpdate = callbacks?.onLoadingStateUpdate
+    const pipelineActive = this.conversionPipeline.getActiveCount()
+    const maxConcurrent = this.conversionPipeline.getMaxConcurrent()
+    const isPipelineSaturated = pipelineActive >= maxConcurrent
+
+    const existingTask = this.pendingConversions.get(taskKey)
+    if (existingTask) {
+      console.info(
+        `Joining pending conversion task for ${strategy.getName()} (${originalUrl})`,
+      )
+      return await existingTask
+    }
+
+    if (onLoadingStateUpdate && isPipelineSaturated) {
+      const i18n = jotaiStore.get(i18nAtom)
+      onLoadingStateUpdate({
+        isConverting: true,
+        isQueueWaiting: true,
+        conversionMessage: i18n.t('loading.queue.waiting'),
+      })
+    }
+
+    const conversionPromise = this.conversionPipeline.enqueue(async () => {
+      try {
+        onLoadingStateUpdate?.({
+          isQueueWaiting: false,
+          conversionMessage: undefined,
+        })
+        return await strategy.convert(blob, originalUrl, callbacks)
+      } finally {
+        this.pendingConversions.delete(taskKey)
+      }
+    })
+
+    this.pendingConversions.set(taskKey, conversionPromise)
+    return await conversionPromise
   }
 
   /**
@@ -128,6 +178,30 @@ export class ImageConverterManager {
    */
   getSupportedFormats(): string[] {
     return Array.from(this.strategies.keys())
+  }
+
+  getPipelineStats(): {
+    active: number
+    pending: number
+  } {
+    return {
+      active: this.conversionPipeline.getActiveCount(),
+      pending: this.conversionPipeline.getPendingCount(),
+    }
+  }
+
+  /**
+   * 调整管道的最大并发转换数量
+   */
+  setMaxConcurrentConversions(maxConcurrent: number): void {
+    this.conversionPipeline.setMaxConcurrent(maxConcurrent)
+  }
+
+  private getConversionTaskKey(
+    strategy: ImageConverterStrategy,
+    originalUrl: string,
+  ): string {
+    return `${strategy.getName()}::${originalUrl}`
   }
 }
 

@@ -5,15 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { SUPPORTED_FORMATS } from '../../constants/index.js'
 import { logger } from '../../logger/index.js'
-import type { StorageObject, StorageProvider } from '../interfaces'
-
-export interface LocalConfig {
-  provider: 'local'
-  basePath: string // 本地照片存储的基础路径
-  baseUrl?: string // 用于生成公共 URL 的基础 URL（可选）
-  excludeRegex?: string // 排除文件的正则表达式
-  maxFileLimit?: number // 最大文件数量限制
-}
+import type { LocalConfig, StorageObject, StorageProvider } from '../interfaces'
 
 export interface ScanProgress {
   currentPath: string
@@ -244,7 +236,9 @@ export class LocalStorageProvider implements StorageProvider {
 
       // 如果是图片文件，查找对应的视频文件
       if (SUPPORTED_FORMATS.has(ext)) {
-        const baseName = path.basename(obj.key, ext)
+        // use path.parse to get the name without extension to avoid issues
+        // when the file extension has different casing (e.g. .HEIC)
+        const baseName = path.parse(obj.key).name
         const dirName = path.dirname(obj.key)
 
         // 查找对应的 .mov 文件

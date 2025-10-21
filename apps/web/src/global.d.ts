@@ -39,8 +39,6 @@ declare global {
   export function tw(strings: TemplateStringsArray, ...values: any[]): string
 }
 
-export {}
-
 declare global {
   export type Component<P = object> = FC<Prettify<ComponentType & P>>
 

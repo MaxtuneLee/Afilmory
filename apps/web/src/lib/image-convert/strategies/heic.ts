@@ -42,6 +42,7 @@ export class HeicConverterStrategy implements ImageConverterStrategy {
       // 更新转换状态
       onLoadingStateUpdate?.({
         isConverting: true,
+        isQueueWaiting: false,
         conversionMessage: i18n.t('loading.heic.converting'),
         isHeicFormat: true,
         loadingProgress: 100,

@@ -28,6 +28,7 @@ export class TiffConverterStrategy implements ImageConverterStrategy {
       // 更新转换状态
       onLoadingStateUpdate?.({
         isConverting: true,
+        isQueueWaiting: false,
         conversionMessage: 'Converting TIFF image...',
       })
 
@@ -48,7 +49,7 @@ export class TiffConverterStrategy implements ImageConverterStrategy {
 
   // 浏览器支持检测
   private isBrowserSupportTiff(): boolean {
-    // safari 支持tiff
+    // safari 支持 tiff
     if (isSafari) {
       return true
     }
@@ -147,7 +148,7 @@ export class TiffConverterStrategy implements ImageConverterStrategy {
           break
         }
         case 16: {
-          // 16位数据，需要转换为8位
+          // 16 位数据，需要转换为 8 位
           const data = sourceData as Uint16Array
           targetData[dstIndex] = Math.round((data[srcIndex] || 0) / 257) // R
           targetData[dstIndex + 1] =
@@ -165,7 +166,7 @@ export class TiffConverterStrategy implements ImageConverterStrategy {
           break
         }
         case 32: {
-          // 32位浮点数据
+          // 32 位浮点数据
           const data = sourceData as Float32Array | Float64Array
           targetData[dstIndex] = Math.round((data[srcIndex] || 0) * 255) // R
           targetData[dstIndex + 1] =

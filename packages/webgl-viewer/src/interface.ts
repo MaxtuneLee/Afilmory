@@ -100,4 +100,5 @@ export interface DebugInfo {
     loadingKeys: string[]
     pendingKeys: string[]
   }
+  tileOutlinesEnabled?: boolean
 }

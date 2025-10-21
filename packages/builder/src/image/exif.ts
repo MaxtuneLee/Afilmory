@@ -109,7 +109,7 @@ const pickKeys: Array<keyof Tags | (string & {})> = [
   'WBShiftAB',
   'WBShiftGM',
   'WhiteBalanceBias',
-  'WhiteBalanceFineTune',
+
   'FlashMeteringMode',
   'SensingMethod',
   'FocalPlaneXResolution',
@@ -149,12 +149,12 @@ function handleExifData(exifData: Tags, metadata: Metadata): PickedExif {
       ColorChromeEffect: exifData.ColorChromeEffect,
       ColorChromeFxBlue: exifData.ColorChromeFXBlue,
       WhiteBalance: exifData.WhiteBalance,
-      WhiteBalanceFineTune: exifData.WhiteBalanceFineTune,
+
       DynamicRange: exifData.DynamicRange,
       HighlightTone: exifData.HighlightTone,
       ShadowTone: exifData.ShadowTone,
       Saturation: exifData.Saturation,
-      Sharpness: exifData.Sharpness,
+      // Sharpness: exifData.Sharpness,
       NoiseReduction: exifData.NoiseReduction,
       Clarity: exifData.Clarity,
       ColorTemperature: exifData.ColorTemperature,

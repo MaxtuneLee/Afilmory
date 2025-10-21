@@ -133,7 +133,7 @@ export interface PickedExif {
   WBShiftAB: Tags['WBShiftAB']
   WBShiftGM: Tags['WBShiftGM']
   WhiteBalanceBias: Tags['WhiteBalanceBias']
-  WhiteBalanceFineTune: Tags['WhiteBalanceFineTune']
+
   FlashMeteringMode: Tags['FlashMeteringMode']
   SensingMethod: Tags['SensingMethod']
   FocalPlaneXResolution: Tags['FocalPlaneXResolution']

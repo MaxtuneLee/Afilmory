@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 interface LoadingState {
   isVisible: boolean
   isConverting: boolean
+  isQueueWaiting: boolean
   isHeicFormat: boolean
   loadingProgress: number
   loadedBytes: number
@@ -34,6 +35,7 @@ const initialLoadingState: LoadingState = {
   loadedBytes: 0,
   totalBytes: 0,
   conversionMessage: undefined,
+  isQueueWaiting: false,
 
   isWebGLLoading: false,
   webglMessage: undefined,
@@ -99,7 +101,9 @@ export const LoadingIndicator = ({
             // 视频转换状态
             <>
               <p className="text-xs font-medium text-white tabular-nums">
-                {loadingState.conversionMessage || t('loading.converting')}
+                {loadingState.isQueueWaiting
+                  ? loadingState.conversionMessage || t('loading.queue.waiting')
+                  : loadingState.conversionMessage || t('loading.converting')}
               </p>
             </>
           ) : loadingState.isWebGLLoading ? (

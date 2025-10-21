@@ -314,9 +314,6 @@ export const formatExifData = (exif: PickedExif | null) => {
   const whiteBalanceBias = exif.WhiteBalanceBias || null
   const wbShiftAB = exif.WBShiftAB || null
   const wbShiftGM = exif.WBShiftGM || null
-  const whiteBalanceFineTune = translateWhiteBalanceFineTune(
-    exif.WhiteBalanceFineTune ? String(exif.WhiteBalanceFineTune) : null,
-  )
 
   // 感光方法
   const sensingMethod = translateSensingMethod(exif.SensingMethod || null)
@@ -403,7 +400,6 @@ export const formatExifData = (exif: PickedExif | null) => {
     whiteBalanceBias,
     wbShiftAB,
     wbShiftGM,
-    whiteBalanceFineTune,
 
     // GPS 信息
     gps: gpsInfo.latitude && gpsInfo.longitude ? gpsInfo : null,

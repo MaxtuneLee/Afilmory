@@ -168,7 +168,7 @@ export const PhotoMarkerPin = ({
                 )}
 
                 {marker.photo.exif?.Make && marker.photo.exif?.Model && (
-                  <div className="text-text-secondary flex items-center gap-2">
+                  <div className="text-text-secondary flex items-center gap-2 text-xs">
                     <i className="i-mingcute-camera-line text-sm" />
                     <span className="truncate">
                       {marker.photo.exif.Make} {marker.photo.exif.Model}

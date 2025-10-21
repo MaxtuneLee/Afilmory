@@ -1,7 +1,7 @@
 import { siteConfig } from '@config'
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
 import { AnimatePresence, m } from 'motion/react'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -122,23 +122,20 @@ export const SharePanel = ({ photo, trigger, blobSrc }: SharePanelProps) => {
       toast.error(t('photo.share.copy.failed'))
     }
   }, [t])
+  const shareCodeRef = useRef<HTMLElement>(null)
 
   const handleCopyEmbedCode = useCallback(async () => {
     try {
-      const embedCode = `<iframe
-  src="${siteConfig.url}/share/iframe?id=${photo.id}"
-  height="500"
-  className="w-full"
-  allowTransparency
-  sandbox="allow-scripts allow-same-origin allow-popups"
-/>`
-      await navigator.clipboard.writeText(embedCode)
+      const embedCode = shareCodeRef.current?.textContent
+      if (embedCode) {
+        await navigator.clipboard.writeText(embedCode)
+      }
       toast.success(t('photo.share.embed.copied'))
       setIsOpen(false)
     } catch {
       toast.error(t('photo.share.copy.failed'))
     }
-  }, [photo.id, t])
+  }, [t])
 
   const handleSocialShare = useCallback(
     (url: string) => {
@@ -279,7 +276,17 @@ export const SharePanel = ({ photo, trigger, blobSrc }: SharePanelProps) => {
                     </div>
                     <div className="relative">
                       <div className="bg-fill-secondary/50 border-border/10 rounded-lg border p-3">
-                        <code className="text-text-secondary font-mono text-xs break-all whitespace-pre select-all">
+                        <code
+                          ref={(ref) => {
+                            if (ref) {
+                              shareCodeRef.current = ref
+                            }
+                            return () => {
+                              shareCodeRef.current = null
+                            }
+                          }}
+                          className="text-text-secondary font-mono text-xs break-all whitespace-pre select-all"
+                        >
                           {`<iframe
   src="${siteConfig.url.replace(/\/$/, '')}/share/iframe?id=${photo.id}"
   style="width: 100%; aspect-ratio: ${photo.width} / ${photo.height}"
